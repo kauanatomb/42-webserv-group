@@ -3,18 +3,22 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: ktombola <ktombola@student.42.fr>          +#+  +:+       +#+         #
+#    By: falatrac <falatrac@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/10 10:18:02 by ktombola          #+#    #+#              #
-#    Updated: 2025/11/10 10:18:06 by ktombola         ###   ########.fr        #
+#    Updated: 2026/02/06 16:26:32 by falatrac         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CXX = c++
 CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
-INFILE = src/main.cpp
+NAME = webserv
+SRCS = \
+	src/main.cpp \
+	src/config/Tokenizer.cpp
+#INFILE = src/main.cpp
 
-OBJ = $(INFILE:.cpp=.o)
+OBJ = $(SRCS:.cpp=.o)
 
 NAME = webserv
 

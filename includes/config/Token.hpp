@@ -6,7 +6,7 @@ enum TokenType
     TOK_WORD,
     TOK_LBRACE,    // {
     TOK_RBRACE,    // }
-    TOL_SEMICOLON, // ;
+    TOK_SEMICOLON, // ;
     TOK_END        // EOF
 };
 

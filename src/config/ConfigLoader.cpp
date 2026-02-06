@@ -20,7 +20,7 @@ void ConfigLoader::load(const std::string& path) {
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenize();
     //print tokens for debug
-    // Tokenizer::printTokens(tokens);
+    Tokenizer::printTokens(tokens);
 
     ConfigParser parser(tokens);
     ConfigAST ast = parser.parse();
