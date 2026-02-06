@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 
 
 
-//main to test tokenizer
+// main to test tokenizer
 // int main(int argc, char **argv)
 // {
 //     if (argc != 2) {
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
 //     std::ifstream file (argv[1]);
 //     Tokenizer tokenizer(file);
-//     std::vector<Token> tokns = tokenizer.tokenize();
+//     std::vector<Token> tokns = tokenizer.tokenizer();
 //     Tokenizer::printTokens(tokns);
 //     return 0;
 // }
