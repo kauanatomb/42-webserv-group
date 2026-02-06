@@ -1,38 +1,92 @@
 
 #include "config/ConfigParser.hpp"
+#include <exception>
 
 int main()
 {
     //Token for testing(aggregate initialization so class Tokens is not called )
-    std::vector<Token> tokens =
-    {
-        { WORD, "server" },
-        { LBRACE, "{" },
+    std::vector<Token> tokens;
+    Token tok;
 
-        { WORD, "listen" },
-        { WORD, "8080" },
-        { SEMICOLON, ";" },
+    /* server { */
+    tok.type = WORD;
+    tok.value = "server";
+    tokens.push_back(tok);
 
-        { WORD, "root" },
-        { WORD, "/var/www" },
-        { SEMICOLON, ";" },
+    tok.type = LBRACE;
+    tok.value = "{";
+    tokens.push_back(tok);
 
-        { WORD, "location" },
-        { WORD, "/" },
-        { LBRACE, "{" },
+    /* listen 8080 ; */
+    tok.type = WORD;
+    tok.value = "listen";
+    tokens.push_back(tok);
 
-        { WORD, "index" },
-        { WORD, "index.html" },
-        { SEMICOLON, ";" },
+    tok.type = WORD;
+    tok.value = "8080";
+    tokens.push_back(tok);
 
-        { RBRACE, "}" },
-        { RBRACE, "}" }
-    };
+    tok.type = SEMICOLON;
+    tok.value = ";";
+    tokens.push_back(tok);
 
+    /* root /var/www ; */
+    tok.type = WORD;
+    tok.value = "root";
+    tokens.push_back(tok);
+
+    tok.type = WORD;
+    tok.value = "/var/www";
+    tokens.push_back(tok);
+
+    tok.type = SEMICOLON;
+    tok.value = ";";
+    tokens.push_back(tok);
+
+    /* location / { */
+    tok.type = WORD;
+    tok.value = "location";
+    tokens.push_back(tok);
+
+    tok.type = WORD;
+    tok.value = "/";
+    tokens.push_back(tok);
+
+    tok.type = LBRACE;
+    tok.value = "{";
+    tokens.push_back(tok);
+
+    /* index index.html ; */
+    tok.type = WORD;
+    tok.value = "index";
+    tokens.push_back(tok);
+
+    tok.type = WORD;
+    tok.value = "index.html";
+    tokens.push_back(tok);
+
+    tok.type = SEMICOLON;
+    tok.value = ";";
+    tokens.push_back(tok);
+
+    /* } } */
+    tok.type = RBRACE;
+    tok.value = "}";
+    tokens.push_back(tok);
+
+    tok.type = RBRACE;
+    tok.value = "}";
+    tokens.push_back(tok);
 
     ConfigParser Parse(tokens);
-
-    ConfigAST config1 = Parse.parse();
+    try 
+    {
+        ConfigAST config1 = Parse.parse();
+    }
+    catch(std::exception &e)
+    {
+        std::cerr << "Caught parse error: " << e.what() << std::endl;
+    }
 }
 /*
 #include <iostream>

@@ -12,7 +12,7 @@
 
 CXX = c++
 CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
-INFILE = src/main.cpp
+INFILE = src/main.cpp src/config/ConfigParser.cpp
 
 OBJ = $(INFILE:.cpp=.o)
 
@@ -35,3 +35,5 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+
+## pending: put object files to obj folder of config code

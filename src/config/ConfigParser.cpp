@@ -1,12 +1,13 @@
-#include "ConfigParser.hpp"
+#include "config/ConfigParser.hpp"
 
 
+//*** OCF
 //ConfigParser::ConfigParser(void)
 //{
 //    return ;
 //}
 
-ConfigParser::ConfigParser(const std::vector<Token>& tokens) : _pos(0), _tokens(tokens)
+ConfigParser::ConfigParser(const std::vector<Token>& tokens) :  _tokens(tokens), _pos(0)
 {
     return ;
 }
@@ -31,42 +32,107 @@ ConfigParser::~ConfigParser(void)
 }
 
 
-//Methods
+/***************************Main Methods************************************/
 ConfigAST ConfigParser::parse(void)
 {
     ConfigAST  config;
     while (_pos < _tokens.size())
     {
-        if (_tokens[_pos].value == "server") // & _tokens[_pos].type == WORD
-            std::cout << "First word okay ! " << std::endl; //parseServer();
+        if (getCurrentTokenValue() == "server") // & _tokens[_pos].type == WORD
+        {
+            _pos++; //skip to next token -> function  
+            config.servers.push_back(parseServer());
+        }
         else
             throw std::runtime_error("Unexpected token ");
-        //For first test set position to final
+
         _pos = _tokens.size();
     }
 
+    if (config.servers.empty()) {
+        throw std::runtime_error("Config must contain at least one server block");
+    }
     return (config);
 }
-/*
-loop over token vector 
-    if server 
-        server Node
-    else 
-        throw
 
-*/
+/***************************Helper Functions************************************/
+//Grammar server:        → "server" "{" (directive | location)* "}"
+ServerNode ConfigParser::parseServer()
+{   
+    ServerNode severN;
 
-//Helper Functions 
+    continueIfMatch(LBRACE);   
+    while(getCurrentTokenType() != RBRACE)
+    {
+        if (getCurrentTokenValue() == "location")
+            parseLocation();
+        else if (getCurrentTokenType() == WORD)
+            parseDirective();
+    }
+    continueIfMatch(RBRACE);
+    //empty check?
+    return (severN);
+}
 
-ServerNode parseServer(){}
-LocationNode parseLocation(){}
-Directive parseDirective(){}
+//Grammar location:      → "location" WORD "{" directive* "}"
+LocationNode ConfigParser::parseLocation()
+{
+    LocationNode locationN;
+
+    locationN.path = getCurrentTokenValue();
+    _pos++//skip first word
+    continueIfMatchType(WORD);
+    continueIfMatchType(LBRACE);
+    while(getCurrentTokenType() != RBRACE)
+    {
+
+    }
+    continueIfMatchType(RBRACE);
+}
+
+// Grammar directive:     → WORD WORD* ";"
+Directive ConfigParser::parseDirective()
+{
+    Directive directiveN;
+
+    directiveN.name = getCurrentTokenValue();
+    _pos++//skip first word
+    while(getCurrentTokenType() != SEMICOLON)
+    {
+        if (getCurrentTokenType() == WORD)
+            directiveN.args.push_back(getCurrentTokenValue());
+        pos++
+    }
+    continueIfMatchType(SEMICOLON);
+}
+
+/***************************Utils************************************/
+void ConfigParser::continueIfMatchType(TokenType type)
+{
+    if (_tokens[this->_pos].type != type)
+        throw std::runtime_error("Unexpected token type");
+    _pos++;
+    return;
+}
+
+void continueIfMatchValue(const std::string &value)
+{
+    if (_tokens[this->_pos].value != value)
+        throw std::runtime_error("Unexpected token value");
+    _pos++;
+    return;
+}
 
 
+        
+/***************************Getters and Setters************************************/
+//**Getters and Setters
+TokenType getCurrentTokenType()
+{
+    return (_tokens[this->_pos].type );
+}
 
-//Getters and Setters
-//size_t getPos() const
-//{
-//    retu
-//}
-//setPos(size_t newSize);
+std::string getCurrentTokenValue()
+{
+    return (_tokens[this->_pos].value );
+}

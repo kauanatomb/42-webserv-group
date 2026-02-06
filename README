@@ -30,3 +30,7 @@ ConfigAST
 │   └── locations
 └── ServerNode (8081)
     └── locations
+
+
+pending: 
+ tests cases directive only
