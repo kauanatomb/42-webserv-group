@@ -1,5 +1,6 @@
 
 #include "config/ConfigParser.hpp"
+#include "debug/ASTPrinter.hpp"
 #include <exception>
 
 int main()
@@ -21,59 +22,46 @@ int main()
     tok.type = WORD;
     tok.value = "listen";
     tokens.push_back(tok);
-
     tok.type = WORD;
     tok.value = "8080";
     tokens.push_back(tok);
-
     tok.type = SEMICOLON;
     tok.value = ";";
-    tokens.push_back(tok);
-
-    /* root /var/www ; */
-    tok.type = WORD;
-    tok.value = "root";
-    tokens.push_back(tok);
-
-    tok.type = WORD;
-    tok.value = "/var/www";
-    tokens.push_back(tok);
-
-    tok.type = SEMICOLON;
-    tok.value = ";";
-    tokens.push_back(tok);
-
-    /* location / { */
-    tok.type = WORD;
-    tok.value = "location";
-    tokens.push_back(tok);
-
-    tok.type = WORD;
-    tok.value = "/";
-    tokens.push_back(tok);
-
-    tok.type = LBRACE;
-    tok.value = "{";
-    tokens.push_back(tok);
-
-    /* index index.html ; */
-    tok.type = WORD;
-    tok.value = "index";
-    tokens.push_back(tok);
-
-    tok.type = WORD;
-    tok.value = "index.html";
-    tokens.push_back(tok);
-
-    tok.type = SEMICOLON;
-    tok.value = ";";
-    tokens.push_back(tok);
-
-    /* } } */
-    tok.type = RBRACE;
-    tok.value = "}";
-    tokens.push_back(tok);
-
+    //tokens.push_back(tok);
+    ///* root /var/www ; */
+    //tok.type = WORD;
+    //tok.value = "root";
+    //tokens.push_back(tok);
+    //tok.type = WORD;
+    //tok.value = "/var/www";
+    //tokens.push_back(tok);
+    //tok.type = SEMICOLON;
+    //tok.value = ";";
+    //tokens.push_back(tok);
+    ///* location / { */
+    //tok.type = WORD;
+    //tok.value = "location";
+    //tokens.push_back(tok);
+    //tok.type = WORD;
+    //tok.value = "/";
+    //tokens.push_back(tok);
+    //tok.type = LBRACE;
+    //tok.value = "{";
+    //tokens.push_back(tok);
+    ///* index index.html ; */
+    //tok.type = WORD;
+    //tok.value = "index";
+    //tokens.push_back(tok);
+    //tok.type = WORD;
+    //tok.value = "index.html";
+    //tokens.push_back(tok);
+    //tok.type = SEMICOLON;
+    //tok.value = ";";
+    //tokens.push_back(tok);
+    ///* } } */
+    //tok.type = RBRACE;
+    //tok.value = "}";
+    //tokens.push_back(tok);
     tok.type = RBRACE;
     tok.value = "}";
     tokens.push_back(tok);
@@ -82,12 +70,18 @@ int main()
     try 
     {
         ConfigAST config1 = Parse.parse();
+        ASTPrinter::print(config1);
     }
     catch(std::exception &e)
     {
         std::cerr << "Caught parse error: " << e.what() << std::endl;
     }
+    
 }
+
+
+
+
 /*
 #include <iostream>
 #include "config/ConfigLoader.hpp"
