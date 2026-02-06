@@ -1,24 +1,21 @@
-
 #include "config/ConfigParser.hpp"
 #include "debug/ASTPrinter.hpp"
+#include "debug/TokenBuilder.hpp"
 #include <exception>
+
+
+
 
 int main()
 {
     //Token for testing(aggregate initialization so class Tokens is not called )
-    std::vector<Token> tokens;
-    Token tok;
+    /* Test1 : basic structure
+    
+    */
+    std::vector<Token> test1;
+    test1.push_back(TokenBuilder::makeWord("server"));
+    test1.push_back(TokenBuilder::makeLBrace());
 
-    /* server { */
-    tok.type = WORD;
-    tok.value = "server";
-    tokens.push_back(tok);
-
-    tok.type = LBRACE;
-    tok.value = "{";
-    tokens.push_back(tok);
-
-    /* listen 8080 ; */
     tok.type = WORD;
     tok.value = "listen";
     tokens.push_back(tok);
@@ -27,41 +24,41 @@ int main()
     tokens.push_back(tok);
     tok.type = SEMICOLON;
     tok.value = ";";
-    //tokens.push_back(tok);
-    ///* root /var/www ; */
-    //tok.type = WORD;
-    //tok.value = "root";
-    //tokens.push_back(tok);
-    //tok.type = WORD;
-    //tok.value = "/var/www";
-    //tokens.push_back(tok);
-    //tok.type = SEMICOLON;
-    //tok.value = ";";
-    //tokens.push_back(tok);
-    ///* location / { */
-    //tok.type = WORD;
-    //tok.value = "location";
-    //tokens.push_back(tok);
-    //tok.type = WORD;
-    //tok.value = "/";
-    //tokens.push_back(tok);
-    //tok.type = LBRACE;
-    //tok.value = "{";
-    //tokens.push_back(tok);
-    ///* index index.html ; */
-    //tok.type = WORD;
-    //tok.value = "index";
-    //tokens.push_back(tok);
-    //tok.type = WORD;
-    //tok.value = "index.html";
-    //tokens.push_back(tok);
-    //tok.type = SEMICOLON;
-    //tok.value = ";";
-    //tokens.push_back(tok);
-    ///* } } */
-    //tok.type = RBRACE;
-    //tok.value = "}";
-    //tokens.push_back(tok);
+    tokens.push_back(tok);
+    /* root /var/www ; */
+    tok.type = WORD;
+    tok.value = "root";
+    tokens.push_back(tok);
+    tok.type = WORD;
+    tok.value = "/var/www";
+    tokens.push_back(tok);
+    tok.type = SEMICOLON;
+    tok.value = ";";
+    tokens.push_back(tok);
+    /* location / { */
+    tok.type = WORD;
+    tok.value = "location";
+    tokens.push_back(tok);
+    tok.type = WORD;
+    tok.value = "/";
+    tokens.push_back(tok);
+    tok.type = LBRACE;
+    tok.value = "{";
+    tokens.push_back(tok);
+    /* index index.html ; */
+    tok.type = WORD;
+    tok.value = "index";
+    tokens.push_back(tok);
+    tok.type = WORD;
+    tok.value = "index.html";
+    tokens.push_back(tok);
+    tok.type = SEMICOLON;
+    tok.value = ";";
+    tokens.push_back(tok);
+    /* } } */
+    tok.type = RBRACE;
+    tok.value = "}";
+    tokens.push_back(tok);
     tok.type = RBRACE;
     tok.value = "}";
     tokens.push_back(tok);
