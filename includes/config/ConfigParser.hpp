@@ -18,18 +18,7 @@ class ConfigParser
         LocationNode parseLocation();
         Directive parseDirective();
 
-        /***************************Utils************************************/
-        /**
-        @brief Function that cuts the code flow if token type is not found, 
-                else passes to next token
-        */
-        void continueIfMatchType(TokenType type);
 
-        /**
-        @brief Function that cuts the code flow if token value is not found, 
-                else passes to next token
-        */
-        void continueIfMatchValue(const std::string &value);
     
     public:
         //***************************OCF************************************/

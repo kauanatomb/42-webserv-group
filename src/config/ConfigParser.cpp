@@ -34,7 +34,6 @@ ConfigParser::~ConfigParser(void)
 
 /***********************************Main Methods************************************/
 
-
 ConfigAST ConfigParser::parse(void)
 {
     ConfigAST  config;
@@ -43,13 +42,14 @@ ConfigAST ConfigParser::parse(void)
     {
         if (getCurrentTokenValue() == "server") // & _tokens[_pos].type == WORD 
             config.servers.push_back(parseServer());
+        else if (getCurrentTokenValue() == "location") 
+            throw std::runtime_error("Location outside of server");
         else
             throw std::runtime_error("Unexpected token");
 
         _pos = _tokens.size();
     }
-
-    if (config.servers.empty()) {
+    if (config.servers.empty()) { //discuss: case of empty config
         throw std::runtime_error("Config must contain at least one server block");
     }
     return (config);
@@ -60,14 +60,31 @@ ConfigAST ConfigParser::parse(void)
 ServerNode ConfigParser::parseServer()
 {   
     ServerNode newServer;
-    continueIfMatchValue("server"); 
-    continueIfMatchType(LBRACE);   
-    while(getCurrentTokenType() != RBRACE)
+
+    if (getCurrentTokenValue() != "server") 
+        throw std::runtime_error("Unexpected token:" + getCurrentTokenValue() + ", instead of \"server\"");
+    _pos++;
+
+    //checl LBRACE : case of wrong tokens or no more tokens
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("without {");
+
+    if (getCurrentTokenType() != LBRACE) 
+        throw std::runtime_error("without {"); //merge in one 
+    _pos++;
+
+    std::cout << "F" << std::endl;
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("without }");
+    
+
+    while( _tokens[this->_pos].type != RBRACE && _pos >= _tokens.size())
     {
         if (getCurrentTokenValue() == "location")
         {
-            LocationNode newLocation = parseLocation();
-            newServer.locations.push_back(newLocation);
+            //LocationNode newLocation = parseLocation();
+            //newServer.locations.push_back(newLocation);
+            throw std::runtime_error("End");
         }
         else if (getCurrentTokenType() == WORD)
         {
@@ -75,69 +92,75 @@ ServerNode ConfigParser::parseServer()
             newServer.directives.push_back(newDirective);
         }
     }
-    continueIfMatchType(RBRACE);
+
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("without }");
+
+    if (getCurrentTokenType() != RBRACE) 
+        throw std::runtime_error("without }"); //merge in one 
+     _pos++;
+    
     return (newServer);
 }
 
-//Grammar location:      → "location" WORD "{" directive* "}"
-LocationNode ConfigParser::parseLocation()
-{
-    LocationNode newLocation;
 
-    continueIfMatchValue("location");
-    if (getCurrentTokenType() == WORD)
-        newLocation.path = getCurrentTokenValue();
-    continueIfMatchType(WORD);
-    continueIfMatchType(LBRACE);
-    while(getCurrentTokenType() != RBRACE) // will it cause brake in case there is no directive
-    {
-        Directive newDirective = parseDirective();
-        newLocation.directives.push_back(newDirective);
-    }
-    continueIfMatchType(RBRACE);
-    return (newLocation);
-}
 
 // Grammar directive:     → WORD WORD* ";"
 Directive ConfigParser::parseDirective()
 {
     Directive newDirective;
 
-    newDirective.name = getCurrentTokenValue();
-    continueIfMatchType(WORD);
+    newDirective.name = getCurrentTokenValue(); //assign name with existence verified
+        _pos++;
+
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("Directive without ;");
+
     while(getCurrentTokenType() == WORD && _pos < _tokens.size() )
     {
-        if (getCurrentTokenType() == WORD)
-            newDirective.args.push_back(getCurrentTokenValue());
+        newDirective.args.push_back(getCurrentTokenValue());
         _pos++;
     }
-    continueIfMatchType(SEMICOLON);
+
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("Directive without ;");
+    
+    if (getCurrentTokenType() == SEMICOLON)
+        _pos++;
+    else
+        throw std::runtime_error("Unexpected token:" + getCurrentTokenValue() + ", instead of \";\"");
     return (newDirective);
 }
 
-/***************************Utils************************************/
-void ConfigParser::continueIfMatchType(TokenType type)
-{ 
-    if (getCurrentTokenType() != type)
-        throw std::runtime_error("Unexpected token");
-    _pos++;
-    return;
-}
 
-void ConfigParser::continueIfMatchValue(const std::string &value)
-{
-    if (getCurrentTokenValue() != value)
-        throw std::runtime_error("Unexpected token");
-    _pos++;
-    return;
-}
+//Grammar location:      → "location" WORD "{" directive* "}"
+//LocationNode ConfigParser::parseLocation()
+//{
+//    LocationNode newLocation;
+//
+//    continueIfMatchValue("location");
+//    if (getCurrentTokenType() == WORD)
+//        newLocation.path = getCurrentTokenValue();
+//    continueIfMatchType(WORD);
+//    continueIfMatchType(LBRACE);
+//    while(getCurrentTokenType() != RBRACE) // will it cause brake in case there is no directive
+//    {
+//        Directive newDirective = parseDirective();
+//        newLocation.directives.push_back(newDirective);
+//    }
+//    continueIfMatchType(RBRACE);
+//    return (newLocation);
+//}
+
+
+
         
 /***************************Getters and Setters************************************/
 //**Getters and Setters
 TokenType ConfigParser::getCurrentTokenType()
 {
     if (_pos >= _tokens.size())
-        throw std::runtime_error("Token out range");
+        throw std::runtime_error("Unexpected end of file while parsing");
     else
         return (_tokens[this->_pos].type );
 }
@@ -145,7 +168,8 @@ TokenType ConfigParser::getCurrentTokenType()
 std::string ConfigParser::getCurrentTokenValue()
 {
     if (_pos >= _tokens.size())
-        throw std::runtime_error("Trying to access token out of range");
+        throw std::runtime_error("Unexpected end of file while parsing");
     else
         return (_tokens[this->_pos].value );
 }
+
