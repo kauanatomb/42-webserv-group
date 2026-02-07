@@ -55,13 +55,13 @@ int main()
         server {
             listen 8080;
             error_page 404 500 502 /errors.html;
-            location {
+            location bla {
                 allowed_methods GET POST PUT DELETE;
                 index index.html index.htm default.html;
             }
         }
         Expected Behaviour: pass ✅
-        Current result: I dont know where the error commes from 
+        Current result: ok
     */
 
     std::vector<Token> test2;
@@ -80,6 +80,7 @@ int main()
     test2.push_back(TokenBuilder::makeSemicolon());
 
     test2.push_back(TokenBuilder::makeWord("location"));
+    test2.push_back(TokenBuilder::makeWord("bla"));
     test2.push_back(TokenBuilder::makeLBrace());
 
     test2.push_back(TokenBuilder::makeWord("allowed_methods"));
@@ -104,7 +105,8 @@ int main()
             root /var/www;
         }
         Expected Behaviour: throw error ❌ 
-        Current result: should fail, check directive
+        Current result: should fail, but there is no token to indicate end of line 
+        Pending: add end of line token?
     */
 
     std::vector<Token> test3;
@@ -212,7 +214,7 @@ int main()
     /* Test 9: directive outside server (Server: "server" "{" (directive | location)* "}")
         listen 8080;
         Expected Behaviour: throw error ❌ 
-        Current result: revise with team, or see subject
+        Current result: ok, but revise with team, or see subject
     */
     
     std::vector<Token> test9;
@@ -227,7 +229,7 @@ int main()
         }
         }
         Expected Behaviour: throw error ❌ 
-        Current result: revise server logic
+        Current result: ok
     */
     
     std::vector<Token> test10;
@@ -247,7 +249,7 @@ int main()
             listen 8080;
         }
         Expected Behaviour: throw error ❌ 
-        Current result:ok
+        Current result:ok, but check error message
     */
     std::vector<Token> test11;
     test11.push_back(TokenBuilder::makeWord("website")); // ❌ invalid
@@ -268,7 +270,7 @@ int main()
             }
         }
         Expected Behaviour: throw error ❌
-        Current result: ok  
+        Current result: ok, but check message  
     */
     std::vector<Token> test12;
     test12.push_back(TokenBuilder::makeWord("server"));
@@ -299,7 +301,7 @@ int main()
             }
         }
         Expected Behaviour: throw error ❌ 
-        Current result: ok
+        Current result: ok, but check message location 
     */
 
     std::vector<Token> test13;
@@ -329,7 +331,7 @@ int main()
             }
         }
         Expected Behaviour: pass ✅
-        Current result: ok 
+        Current result: wrong check logic 
     */
 
     std::vector<Token> test14;

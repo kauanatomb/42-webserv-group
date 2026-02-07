@@ -17,7 +17,7 @@ class ConfigParser
         ServerNode parseServer();
         LocationNode parseLocation();
         Directive parseDirective();
-
+        std::string TokenTypeToString(TokenType type) const;
 
     
     public:

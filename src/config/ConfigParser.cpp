@@ -62,7 +62,7 @@ ServerNode ConfigParser::parseServer()
     ServerNode newServer;
 
     if (getCurrentTokenValue() != "server") 
-        throw std::runtime_error("Unexpected token:" + getCurrentTokenValue() + ", instead of \"server\"");
+        throw std::runtime_error("Unexpected token value:" + TokenTypeToString(getCurrentTokenType())  + ", instead of \"server\"");
     _pos++;
 
     //checl LBRACE : case of wrong tokens or no more tokens
@@ -73,18 +73,16 @@ ServerNode ConfigParser::parseServer()
         throw std::runtime_error("without {"); //merge in one 
     _pos++;
 
-    std::cout << "F" << std::endl;
     if(_pos >= _tokens.size()) 
         throw std::runtime_error("without }");
     
 
-    while( _tokens[this->_pos].type != RBRACE && _pos >= _tokens.size())
+    while( _tokens[this->_pos].type != RBRACE && _pos < _tokens.size())
     {
         if (getCurrentTokenValue() == "location")
         {
-            //LocationNode newLocation = parseLocation();
-            //newServer.locations.push_back(newLocation);
-            throw std::runtime_error("End");
+            LocationNode newLocation = parseLocation();
+            newServer.locations.push_back(newLocation);
         }
         else if (getCurrentTokenType() == WORD)
         {
@@ -98,12 +96,25 @@ ServerNode ConfigParser::parseServer()
 
     if (getCurrentTokenType() != RBRACE) 
         throw std::runtime_error("without }"); //merge in one 
-     _pos++;
-    
+    _pos++;
+
+    if(_pos < _tokens.size())
+        throw std::runtime_error("Unexpected token " + getCurrentTokenValue());
     return (newServer);
 }
 
 
+
+std::string ConfigParser::TokenTypeToString(TokenType type) const
+{
+    switch (type) {
+        case WORD:      return "word";
+        case LBRACE:    return "'{'";
+        case RBRACE:    return "'}'";
+        case SEMICOLON: return "';'";
+        default:        return "unknown";
+    }
+}
 
 // Grammar directive:     → WORD WORD* ";"
 Directive ConfigParser::parseDirective()
@@ -128,29 +139,46 @@ Directive ConfigParser::parseDirective()
     if (getCurrentTokenType() == SEMICOLON)
         _pos++;
     else
-        throw std::runtime_error("Unexpected token:" + getCurrentTokenValue() + ", instead of \";\"");
+        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of \";\"");
     return (newDirective);
 }
 
 
 //Grammar location:      → "location" WORD "{" directive* "}"
-//LocationNode ConfigParser::parseLocation()
-//{
-//    LocationNode newLocation;
-//
-//    continueIfMatchValue("location");
-//    if (getCurrentTokenType() == WORD)
-//        newLocation.path = getCurrentTokenValue();
-//    continueIfMatchType(WORD);
-//    continueIfMatchType(LBRACE);
-//    while(getCurrentTokenType() != RBRACE) // will it cause brake in case there is no directive
-//    {
-//        Directive newDirective = parseDirective();
-//        newLocation.directives.push_back(newDirective);
-//    }
-//    continueIfMatchType(RBRACE);
-//    return (newLocation);
-//}
+LocationNode ConfigParser::parseLocation()
+{
+    LocationNode newLocation;
+
+    if (getCurrentTokenValue() == "location")
+        _pos++;
+
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("Location without path");
+
+    if (getCurrentTokenType() != WORD) 
+        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of WORD");
+    _pos++;
+    
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("Location without {");
+
+    if (getCurrentTokenType() != LBRACE) 
+        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of {");
+    _pos++;
+    
+    while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) // will it cause brake in case there is no directive
+    {
+        Directive newDirective = parseDirective();
+        newLocation.directives.push_back(newDirective);
+    }
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error("Location without }");
+
+    if (getCurrentTokenType() != RBRACE) 
+        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of }");
+    _pos++;
+    return (newLocation);
+}
 
 
 
