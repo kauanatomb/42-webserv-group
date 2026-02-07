@@ -1,10 +1,12 @@
 #pragma once
+#include <string>
 
 enum TokenType {
     WORD,
     LBRACE,   // {
     RBRACE,   // }
-    SEMICOLON // ;
+    SEMICOLON, // ;
+    EOT
 };
 
 struct Token {

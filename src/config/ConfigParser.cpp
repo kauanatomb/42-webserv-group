@@ -41,13 +41,10 @@ ConfigAST ConfigParser::parse(void)
 
     while (_pos < _tokens.size())
     {
-        if (getCurrentTokenValue() == "server") // & _tokens[_pos].type == WORD
-        {
-            _pos++; //skip to next token -> function  
+        if (getCurrentTokenValue() == "server") // & _tokens[_pos].type == WORD 
             config.servers.push_back(parseServer());
-        }
         else
-            throw std::runtime_error("Unexpected token ");
+            throw std::runtime_error("Unexpected token");
 
         _pos = _tokens.size();
     }
@@ -63,7 +60,7 @@ ConfigAST ConfigParser::parse(void)
 ServerNode ConfigParser::parseServer()
 {   
     ServerNode newServer;
-
+    continueIfMatchValue("server"); 
     continueIfMatchType(LBRACE);   
     while(getCurrentTokenType() != RBRACE)
     {
@@ -108,7 +105,7 @@ Directive ConfigParser::parseDirective()
 
     newDirective.name = getCurrentTokenValue();
     continueIfMatchType(WORD);
-    while(getCurrentTokenType() != SEMICOLON)
+    while(getCurrentTokenType() == WORD && _pos < _tokens.size() )
     {
         if (getCurrentTokenType() == WORD)
             newDirective.args.push_back(getCurrentTokenValue());
@@ -119,18 +116,18 @@ Directive ConfigParser::parseDirective()
 }
 
 /***************************Utils************************************/
-void ConfigParser::continueIfMatchType(TokenType type)
-{
+void ConfigParser::continueIfMatchType(TokenType type, std::string errorMessage)
+{ 
     if (getCurrentTokenType() != type)
-        throw std::runtime_error("Unexpected token type");
+        throw std::runtime_error(errorMessage);
     _pos++;
     return;
 }
 
-void ConfigParser::continueIfMatchValue(const std::string &value)
+void ConfigParser::continueIfMatchValue(const std::string &value, std:string errorMessage)
 {
     if (getCurrentTokenValue() != value)
-        throw std::runtime_error("Unexpected token value");
+        throw std::runtime_error(errorMessage);
     _pos++;
     return;
 }
@@ -139,10 +136,16 @@ void ConfigParser::continueIfMatchValue(const std::string &value)
 //**Getters and Setters
 TokenType ConfigParser::getCurrentTokenType()
 {
-    return (_tokens[this->_pos].type );
+    if (_pos >= _tokens.size())
+        throw std::runtime_error("Token out range");
+    else
+        return (_tokens[this->_pos].type );
 }
 
 std::string ConfigParser::getCurrentTokenValue()
 {
-    return (_tokens[this->_pos].value );
+    if (_pos >= _tokens.size())
+        throw std::runtime_error("Trying to access token out of range");
+    else
+        return (_tokens[this->_pos].value );
 }

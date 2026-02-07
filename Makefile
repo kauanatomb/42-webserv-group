@@ -12,7 +12,8 @@
 
 CXX = c++
 CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
-INFILE = src/main.cpp src/config/ConfigParser.cpp src/debug/ASTPrinter.cpp
+INFILE = src/main.cpp src/config/ConfigParser.cpp src/debug/ASTPrinter.cpp  \
+		 src/debug/TokenBuilder.cpp  
 
 OBJ = $(INFILE:.cpp=.o)
 

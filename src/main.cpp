@@ -5,65 +5,25 @@
 
 
 
-
 int main()
 {
     //Token for testing(aggregate initialization so class Tokens is not called )
-    /* Test1 : basic structure
-    
+    /* Test1 : Minimal valid config
+        server {
+            listen 8080;
+        }
     */
     std::vector<Token> test1;
     test1.push_back(TokenBuilder::makeWord("server"));
     test1.push_back(TokenBuilder::makeLBrace());
+    test1.push_back(TokenBuilder::makeWord("listen"));
+    test1.push_back(TokenBuilder::makeWord("8080"));
+    test1.push_back(TokenBuilder::makeSemicolon());
+    test1.push_back(TokenBuilder::makeRBrace());
+    /*Test2*/
 
-    tok.type = WORD;
-    tok.value = "listen";
-    tokens.push_back(tok);
-    tok.type = WORD;
-    tok.value = "8080";
-    tokens.push_back(tok);
-    tok.type = SEMICOLON;
-    tok.value = ";";
-    tokens.push_back(tok);
-    /* root /var/www ; */
-    tok.type = WORD;
-    tok.value = "root";
-    tokens.push_back(tok);
-    tok.type = WORD;
-    tok.value = "/var/www";
-    tokens.push_back(tok);
-    tok.type = SEMICOLON;
-    tok.value = ";";
-    tokens.push_back(tok);
-    /* location / { */
-    tok.type = WORD;
-    tok.value = "location";
-    tokens.push_back(tok);
-    tok.type = WORD;
-    tok.value = "/";
-    tokens.push_back(tok);
-    tok.type = LBRACE;
-    tok.value = "{";
-    tokens.push_back(tok);
-    /* index index.html ; */
-    tok.type = WORD;
-    tok.value = "index";
-    tokens.push_back(tok);
-    tok.type = WORD;
-    tok.value = "index.html";
-    tokens.push_back(tok);
-    tok.type = SEMICOLON;
-    tok.value = ";";
-    tokens.push_back(tok);
-    /* } } */
-    tok.type = RBRACE;
-    tok.value = "}";
-    tokens.push_back(tok);
-    tok.type = RBRACE;
-    tok.value = "}";
-    tokens.push_back(tok);
 
-    ConfigParser Parse(tokens);
+    ConfigParser Parse(test1);
     try 
     {
         ConfigAST config1 = Parse.parse();

@@ -1,7 +1,9 @@
 #ifndef TOKENBUILDER_HPP
-# define TOKENBUILDER_HPP
+#define TOKENBUILDER_HPP
 
-#include "debug/TokenBuilder.hpp"
+#include "config/Token.hpp"
+#include <string>
+
 
 class TokenBuilder {
 public:
@@ -9,6 +11,7 @@ public:
     static Token makeLBrace();
     static Token makeRBrace() ;
     static Token makeSemicolon();
+    static Token makeEOT();
 };
 
 #endif 

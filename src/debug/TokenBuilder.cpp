@@ -1,29 +1,36 @@
 #include "debug/TokenBuilder.hpp"
 
-static Token makeWord(const std::string& value) {
+ Token TokenBuilder::makeWord(const std::string& value) {
     Token tok;
     tok.type = WORD;
     tok.value = value;
     return tok;
 }
 
-static Token makeLBrace() {
+ Token TokenBuilder::makeLBrace() {
     Token tok;
     tok.type = LBRACE;
     tok.value = "{";
     return tok;
 }
 
-static Token makeRBrace() {
+ Token TokenBuilder::makeRBrace() {
     Token tok;
     tok.type = RBRACE;
     tok.value = "}";
     return tok;
 }
 
-static Token makeSemicolon() {
+ Token TokenBuilder::makeSemicolon() {
     Token tok;
     tok.type = SEMICOLON;
     tok.value = ";";
     return tok;
+}
+
+Token TokenBuilder::makeEOT()
+{
+    Token tok;
+    tok.type = EOT
+    tok.value = "eot";
 }
