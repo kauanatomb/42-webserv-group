@@ -127,7 +127,7 @@ static void validateOnOffStatic(const Directive& d) {
 }
 
 ConfigValidator::ConfigValidator() {
-    _rules["listen"] = makeRule(true, false, 1, 2);
+    _rules["listen"] = makeRule(true, false, 1, 1);
     _rules["server_name"] = makeRule(true, false, 1, SIZE_MAX);
     _rules["root"] = makeRule(true, true, 1, 1);
     _rules["index"] = makeRule(true, true, 1, SIZE_MAX);
@@ -210,7 +210,7 @@ void ConfigValidator::checkCardinality(const std::vector<Directive>& directives)
 }
 
 void ConfigValidator::checkConcurrence(const std::vector<Directive>& directives) {
-    bool has_root, has_index, has_return = false;
+    bool has_root = false, has_index = false, has_return = false;
 
     for(size_t i = 0; i < directives.size(); i++) {
         if (directives[i].name == "root") has_root = true;
@@ -237,7 +237,6 @@ void ConfigValidator::validateContextualRules(const std::vector<Directive>& dire
     bool has_cgi_exec = false;
     bool has_upload_on = false;
     bool has_upload_store = false;
-    bool has_cgi_path = false;
 
     for(size_t i = 0; i < directives.size(); i++) {
         if (directives[i].name == "cgi")
@@ -248,16 +247,14 @@ void ConfigValidator::validateContextualRules(const std::vector<Directive>& dire
             has_upload_on = (directives[i].args[0] == "on");
         if (directives[i].name == "upload_store")
             has_upload_store = true;
-        if (directives[i].name == "cgi_path")
-            has_cgi_path = true;
     }
 
-    if (has_cgi_on && !has_cgi_path)
-        throw ValidationError("cgi on requires cgi path");
     if (has_cgi_on && !has_cgi_exec)
         throw ValidationError("cgi on requires cgi_exec");
     if (has_cgi_exec && !has_cgi_on)
         throw ValidationError("cgi_exec requires cgi on");
     if (has_upload_store && !has_upload_on)
         throw ValidationError("upload_store requires upload on");
+    if (has_upload_on && !has_upload_store)
+        throw ValidationError("upload on requires upload_store");
 }
