@@ -116,18 +116,18 @@ Directive ConfigParser::parseDirective()
 }
 
 /***************************Utils************************************/
-void ConfigParser::continueIfMatchType(TokenType type, std::string errorMessage)
+void ConfigParser::continueIfMatchType(TokenType type)
 { 
     if (getCurrentTokenType() != type)
-        throw std::runtime_error(errorMessage);
+        throw std::runtime_error("Unexpected token");
     _pos++;
     return;
 }
 
-void ConfigParser::continueIfMatchValue(const std::string &value, std:string errorMessage)
+void ConfigParser::continueIfMatchValue(const std::string &value)
 {
     if (getCurrentTokenValue() != value)
-        throw std::runtime_error(errorMessage);
+        throw std::runtime_error("Unexpected token");
     _pos++;
     return;
 }

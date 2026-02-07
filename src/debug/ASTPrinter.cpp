@@ -1,61 +1,53 @@
 #include "debug/ASTPrinter.hpp"
+#include <iostream>
+#include <string>
 
-
- void ASTPrinter::print(const ConfigAST& ast) {
-    std::cout << "\n";
-    std::cout << "╔════════════════════════════════════════╗" << std::endl;
-    std::cout << "║          CONFIGURATION AST            ║" << std::endl;
-    std::cout << "╚════════════════════════════════════════╝" << std::endl;
-    std::cout << "\n";
-    
-    std::cout << "📊 Total Servers: " << ast.servers.size() << "\n\n";
+void ASTPrinter::print(const ConfigAST& ast) {
+    std::cout << "=== CONFIG AST ===" << std::endl;
+    std::cout << "Total servers: " << ast.servers.size() << std::endl;
+    std::cout << std::endl;
     
     for (size_t i = 0; i < ast.servers.size(); i++) {
-        printServer(ast.servers[i], i + 1);
+        std::cout << "SERVER #" << (i + 1) << std::endl;
+        printServer(ast.servers[i], 1);
+        std::cout << std::endl;
+    }
+}
+void ASTPrinter::printServer(const ServerNode& server, int indent) {
+    std::string ind = getIndent(indent);
+    
+    std::cout << ind << "Directives: " << server.directives.size() << std::endl;
+    for (size_t i = 0; i < server.directives.size(); i++) {
+        printDirective(server.directives[i], indent + 1);
+    }
+    
+    std::cout << ind << "Locations: " << server.locations.size() << std::endl;
+    for (size_t i = 0; i < server.locations.size(); i++) {
+        printLocation(server.locations[i], indent + 1);
     }
 }
 
- void ASTPrinter::printServer(const ServerNode& server, int index) {
-    std::cout << "┌─────────────────────────────────────────┐" << std::endl;
-    std::cout << "│ 🖥️  SERVER #" << index << std::setw(28) << "│" << std::endl;
-    std::cout << "└─────────────────────────────────────────┘" << std::endl;
+void ASTPrinter::printLocation(const LocationNode& location, int indent) {
+    std::string ind = getIndent(indent);
     
-    // Print server directives
-    if (!server.directives.empty()) {
-        std::cout << "\n  📝 Server Directives:" << std::endl;
-        for (size_t i = 0; i < server.directives.size(); i++) {
-            std::cout << "    ";
-            printDirective(server.directives[i]);
-        }
-    }
+    std::cout << ind << "LOCATION: \"" << location.path << "\"" << std::endl;
+    std::cout << ind << "  Directives: " << location.directives.size() << std::endl;
     
-    // Print locations
-    if (!server.locations.empty()) {
-        std::cout << "\n  📍 Locations (" << server.locations.size() << "):" << std::endl;
-        for (size_t i = 0; i < server.locations.size(); i++) {
-            printLocation(server.locations[i]);
-        }
-    }
-    
-    std::cout << "\n";
-}
-
- void ASTPrinter::printLocation(const LocationNode& location) {
-    std::cout << "\n    ├─ Path: \"" << location.path << "\"" << std::endl;
-    
-    if (!location.directives.empty()) {
-        std::cout << "    │  Directives:" << std::endl;
-        for (size_t i = 0; i < location.directives.size(); i++) {
-            std::cout << "    │    ";
-            printDirective(location.directives[i]);
-        }
+    for (size_t i = 0; i < location.directives.size(); i++) {
+        printDirective(location.directives[i], indent + 2);
     }
 }
 
- void ASTPrinter::printDirective(const Directive& directive) {
-    std::cout << "• " << directive.name;
+void ASTPrinter::printDirective(const Directive& directive, int indent) {
+    std::string ind = getIndent(indent);
+    
+    std::cout << ind << directive.name;
     for (size_t i = 0; i < directive.args.size(); i++) {
         std::cout << " " << directive.args[i];
     }
     std::cout << ";" << std::endl;
+}
+
+std::string ASTPrinter::getIndent(int level) {
+    return std::string(level * 2, ' ');
 }

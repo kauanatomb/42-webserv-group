@@ -28,9 +28,3 @@
     return tok;
 }
 
-Token TokenBuilder::makeEOT()
-{
-    Token tok;
-    tok.type = EOT
-    tok.value = "eot";
-}
