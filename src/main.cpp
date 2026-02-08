@@ -141,8 +141,6 @@ int main()
     test4.push_back(TokenBuilder::makeRBrace());
 
 
-
-
     /* Test 5: Missing Opening Brace (Server: "server" "{" (directive | location)* "}")
         server
             listen 8080;
@@ -299,7 +297,7 @@ int main()
             }
         }
         Expected Behaviour: throw error ❌ 
-        Current result: ok, but check message location 
+        Current result: ok 
     */
 
     std::vector<Token> test13;
@@ -329,7 +327,7 @@ int main()
             }
         }
         Expected Behaviour: pass ✅
-        Current result: wrong check logic 
+        Current result: ok
     */
 
     std::vector<Token> test14;
@@ -362,20 +360,20 @@ int main()
     test15.push_back(TokenBuilder::makeLBrace());
     test15.push_back(TokenBuilder::makeRBrace());
 
-    //runTest("Test 1: Minimal valid config", test1);
-    //runTest("Test 2: Multiple arguments", test2);
-    //runTest("Test 3: Missing semicolon", test3);
-    //runTest("Test 4: Directive with only one word", test4);
-    //runTest("Test 5: Missing opening brace", test5);
-    //runTest("Test 6: Missing closing brace", test6);
-    //runTest("Test 7: Location outside server", test7);
-    //runTest("Test 8: Empty config", test8);
-    //runTest("Test 9: Directive outside server", test9);
-    //runTest("Test 10: Extra closing brace", test10);
-    //runTest("Test 11: Invalid keyword", test11);
-    //runTest("Test 12: Location without path", test12);
-    //runTest("Test 13: Nested location", test13);
-    //runTest("Test 14: Location without directive", test14);
+    runTest("Test 1: Minimal valid config", test1);
+    runTest("Test 2: Multiple arguments", test2);
+    runTest("Test 3: Missing semicolon", test3);
+    runTest("Test 4: Directive with only one word", test4);
+    runTest("Test 5: Missing opening brace", test5);
+    runTest("Test 6: Missing closing brace", test6);
+    runTest("Test 7: Location outside server", test7);
+    runTest("Test 8: Empty config", test8);
+    runTest("Test 9: Directive outside server", test9);
+    runTest("Test 10: Extra closing brace", test10);
+    runTest("Test 11: Invalid keyword", test11);
+    runTest("Test 12: Location without path", test12);
+    runTest("Test 13: Nested location", test13);
+    runTest("Test 14: Location without directive", test14);
     runTest("Test 15: Location without closing brace", test15);
     
     return 0;

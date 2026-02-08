@@ -66,9 +66,7 @@ ServerNode ConfigParser::parseServer()
             newServer.directives.push_back(newDirective);
         }
     }
-
     checkMandatoryToken(RBRACE, "without }");
-
     if(_pos < _tokens.size()) //for extra closing braces
         throw std::runtime_error("Unexpected token " + getCurrentTokenValue());
     return (newServer);
@@ -103,7 +101,7 @@ Directive ConfigParser::parseDirective()
         newDirective.args.push_back(getCurrentTokenValue());
         _pos++;
     }
-    checkMandatoryToken(RBRACE, "without ;");
+    checkMandatoryToken(SEMICOLON, "without ;");
     return (newDirective);
 }
 
@@ -117,15 +115,13 @@ LocationNode ConfigParser::parseLocation()
         _pos++;
 
     checkMandatoryToken(WORD, "Location : Unexpected token" );
-    std::cout << "paso" << std::endl;
-    checkMandatoryToken(WORD, "Without {" );
-    std::cout << "paso" << std::endl;
+    checkMandatoryToken(LBRACE, "Without {" );
     while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) 
     {
         Directive newDirective = parseDirective();
         newLocation.directives.push_back(newDirective);
     }
-    checkMandatoryToken(LBRACE, "Location without }");
+    checkMandatoryToken(RBRACE, "Location without }");
     return (newLocation);
 }
 
