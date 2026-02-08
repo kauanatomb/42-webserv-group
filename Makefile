@@ -3,22 +3,19 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: falatrac <falatrac@student.42.fr>          +#+  +:+       +#+         #
+#    By: ktombola <ktombola@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/10 10:18:02 by ktombola          #+#    #+#              #
-#    Updated: 2026/02/06 16:26:32 by falatrac         ###   ########.fr        #
+#    Updated: 2025/11/10 10:18:06 by ktombola         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CXX = c++
 CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
-NAME = webserv
-SRCS = \
-	src/main.cpp \
-	src/config/Tokenizer.cpp
-#INFILE = src/main.cpp
+INFILE = src/main.cpp src/config/ConfigParser.cpp src/debug/ASTPrinter.cpp  \
+		 src/debug/TokenBuilder.cpp  
 
-OBJ = $(SRCS:.cpp=.o)
+OBJ = $(INFILE:.cpp=.o)
 
 NAME = webserv
 
@@ -39,3 +36,5 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+
+## pending: put object files to obj folder of config code

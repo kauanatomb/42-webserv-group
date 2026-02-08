@@ -1,20 +1,18 @@
 #pragma once
 #include <string>
 
-enum TokenType 
-{
+enum TokenType {
     WORD,
-    LBRACE,    // {
-    RBRACE,    // }
+    LBRACE,   // {
+    RBRACE,   // }
     SEMICOLON, // ;
-    EOT        // EOF
+    EOT
 };
 
-struct Token 
-{
-    TokenType   type;
+struct Token {
+    TokenType type;
     std::string value;
 
-    Token() : type(EOT), value ("") {};
+    Token() : type(EOT), value ("") {}
     Token(TokenType t, const std::string& v) : type(t), value(v) {}
 };
