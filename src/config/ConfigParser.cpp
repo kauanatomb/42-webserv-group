@@ -2,29 +2,11 @@
 
 
 /************************************OCF***************************************/
-//ConfigParser::ConfigParser(void)
-//{
-//    return ;
-//}
-
 ConfigParser::ConfigParser(const std::vector<Token>& tokens) :  _tokens(tokens), _pos(0)
 {
     return ;
 }
 
-//ConfigParser::ConfigParser(const ConfigParser &other)
-//{
-//    std::cout << "Copy constructor called" << std::endl;
-//    (void) other;
-//    return ;
-//}
-//
-//ConfigParser &ConfigParser::operator=(const ConfigParser &other)
-//{
-//    std::cout << "Assignment operator called" << std::endl;
-//    (void) other;
-//    return (*this);
-//}
 
 ConfigParser::~ConfigParser(void)
 {
@@ -40,7 +22,7 @@ ConfigAST ConfigParser::parse(void)
 
     while (_pos < _tokens.size())
     {
-        if (getCurrentTokenValue() == "server") // & _tokens[_pos].type == WORD 
+        if (getCurrentTokenValue() == "server") 
             config.servers.push_back(parseServer());
         else if (getCurrentTokenValue() == "location") 
             throw std::runtime_error("Location outside of server");
@@ -65,13 +47,7 @@ ServerNode ConfigParser::parseServer()
         throw std::runtime_error("Unexpected token value:" + TokenTypeToString(getCurrentTokenType())  + ", instead of \"server\"");
     _pos++;
 
-    //checl LBRACE : case of wrong tokens or no more tokens
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("without {");
-
-    if (getCurrentTokenType() != LBRACE) 
-        throw std::runtime_error("without {"); //merge in one 
-    _pos++;
+    checkMandatoryToken(LBRACE, "without {");
 
     if(_pos >= _tokens.size()) 
         throw std::runtime_error("without }");
@@ -91,14 +67,9 @@ ServerNode ConfigParser::parseServer()
         }
     }
 
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("without }");
+    checkMandatoryToken(RBRACE, "without }");
 
-    if (getCurrentTokenType() != RBRACE) 
-        throw std::runtime_error("without }"); //merge in one 
-    _pos++;
-
-    if(_pos < _tokens.size())
+    if(_pos < _tokens.size()) //for extra closing braces
         throw std::runtime_error("Unexpected token " + getCurrentTokenValue());
     return (newServer);
 }
@@ -122,7 +93,7 @@ Directive ConfigParser::parseDirective()
     Directive newDirective;
 
     newDirective.name = getCurrentTokenValue(); //assign name with existence verified
-        _pos++;
+    _pos++;
 
     if(_pos >= _tokens.size()) 
         throw std::runtime_error("Directive without ;");
@@ -132,14 +103,7 @@ Directive ConfigParser::parseDirective()
         newDirective.args.push_back(getCurrentTokenValue());
         _pos++;
     }
-
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("Directive without ;");
-    
-    if (getCurrentTokenType() == SEMICOLON)
-        _pos++;
-    else
-        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of \";\"");
+    checkMandatoryToken(RBRACE, "without ;");
     return (newDirective);
 }
 
@@ -148,40 +112,32 @@ Directive ConfigParser::parseDirective()
 LocationNode ConfigParser::parseLocation()
 {
     LocationNode newLocation;
-
+    
     if (getCurrentTokenValue() == "location")
         _pos++;
 
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("Location without path");
-
-    if (getCurrentTokenType() != WORD) 
-        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of WORD");
-    _pos++;
-    
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("Location without {");
-
-    if (getCurrentTokenType() != LBRACE) 
-        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of {");
-    _pos++;
-    
-    while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) // will it cause brake in case there is no directive
+    checkMandatoryToken(WORD, "Location : Unexpected token" );
+    std::cout << "paso" << std::endl;
+    checkMandatoryToken(WORD, "Without {" );
+    std::cout << "paso" << std::endl;
+    while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) 
     {
         Directive newDirective = parseDirective();
         newLocation.directives.push_back(newDirective);
     }
-    if(_pos >= _tokens.size()) 
-        throw std::runtime_error("Location without }");
-
-    if (getCurrentTokenType() != RBRACE) 
-        throw std::runtime_error("Unexpected token:" + TokenTypeToString(getCurrentTokenType()) + ", instead of }");
-    _pos++;
+    checkMandatoryToken(LBRACE, "Location without }");
     return (newLocation);
 }
 
 
-
+void ConfigParser::checkMandatoryToken(TokenType type, std::string errorMessage)
+{
+    if(_pos >= _tokens.size()) 
+        throw std::runtime_error(errorMessage);
+    if (getCurrentTokenType() != type) 
+        throw std::runtime_error(errorMessage); 
+    _pos++;
+}
         
 /***************************Getters and Setters************************************/
 //**Getters and Setters

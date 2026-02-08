@@ -1,12 +1,11 @@
 
 ## Grammar rules for parsing
-
 config        → server*
 server        → "server" "{" (directive | location)* "}"
 location      → "location" WORD "{" directive* "}"
 directive     → WORD WORD* ";"
 
-Parsing output
+## Parsing output
 
 Generic example
 Config
@@ -24,13 +23,12 @@ Config
         └── location /cgi-bin
             └── directives
 
-Concrte Example of multiple servers
+## Concrete Example of multiple servers
 ConfigAST
 ├── ServerNode (8080)
 │   └── locations
 └── ServerNode (8081)
     └── locations
 
-
-pending: 
- tests cases directive only
+## Define Expected behaviour
+    + empty config

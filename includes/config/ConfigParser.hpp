@@ -18,13 +18,12 @@ class ConfigParser
         LocationNode parseLocation();
         Directive parseDirective();
         std::string TokenTypeToString(TokenType type) const;
+        void checkMandatoryToken(TokenType type, std::string errorMessage);
 
     
     public:
         //***************************OCF************************************/
-        //ConfigParser(void);
-        ConfigParser(const std::vector<Token>& tokens); //added
-        //ConfigParser &operator=(const ConfigParser &other);
+        ConfigParser(const std::vector<Token>& tokens);
         ~ConfigParser();
 
         /***************************Methods************************************/
@@ -32,18 +31,10 @@ class ConfigParser
         @brief Function that returns a ConfigAST structure containing the server nodes, given a tokenized version of the configuration file
         */
         ConfigAST parse(void);
-            /*
-            set configAST 
-            detect server keyword and call parserServer
-            */
 
-        
         /***************************Getters and Setters************************************/
-        //**Getters and Setters
         TokenType getCurrentTokenType();
         std::string getCurrentTokenValue();
-        //size_t getPos() const ;
-        //setPos(size_t newSize);
         
 };
 
