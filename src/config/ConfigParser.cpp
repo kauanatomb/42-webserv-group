@@ -24,13 +24,11 @@ ConfigAST ConfigParser::parse(void)
     {
         if (getCurrentTokenValue() == "server" && getCurrentTokenType() == WORD) 
             config.servers.push_back(parseServer());
-        else if (getCurrentTokenValue() == "location") 
-            throw std::runtime_error("Location outside of server");
         else
-            throw std::runtime_error("Unexpected token");
+            throw SyntaxError("Unexpected token");
     }
     if (config.servers.empty()) { //discuss: case of empty config
-        throw std::runtime_error("Config must contain at least one server block");
+        throw SyntaxError("Config must contain at least one server block");
     }
     return (config);
 }
@@ -42,13 +40,13 @@ ServerNode ConfigParser::parseServer()
     ServerNode newServer;
 
     if (getCurrentTokenValue() != "server") 
-        throw std::runtime_error("Unexpected token value:" + TokenTypeToString(getCurrentTokenType())  + ", instead of \"server\"");
+        throw SyntaxError("Unexpected token value:" + TokenTypeToString(getCurrentTokenType())  + ", instead of \"server\"");
     _pos++;
 
     checkMandatoryToken(LBRACE, "without {");
 
     if(_pos >= _tokens.size()) 
-        throw std::runtime_error("without }");
+        throw SyntaxError("without }");
     
 
     while( _tokens[this->_pos].type != RBRACE && _pos < _tokens.size())
@@ -90,7 +88,7 @@ Directive ConfigParser::parseDirective()
     _pos++;
 
     if(_pos >= _tokens.size()) 
-        throw std::runtime_error("Directive without ;");
+        throw SyntaxError("Directive without ;");
 
     while(getCurrentTokenType() == WORD && _pos < _tokens.size() )
     {
@@ -125,9 +123,9 @@ LocationNode ConfigParser::parseLocation()
 void ConfigParser::checkMandatoryToken(TokenType type, std::string errorMessage)
 {
     if(_pos >= _tokens.size()) 
-        throw std::runtime_error(errorMessage);
+        throw SyntaxError(errorMessage);
     if (getCurrentTokenType() != type) 
-        throw std::runtime_error(errorMessage); 
+        throw SyntaxError(errorMessage); 
     _pos++;
 }
         
@@ -136,7 +134,7 @@ void ConfigParser::checkMandatoryToken(TokenType type, std::string errorMessage)
 const TokenType &ConfigParser::getCurrentTokenType() const
 {
     if (_pos >= _tokens.size())
-        throw std::runtime_error("Unexpected end of file while parsing");
+        throw SyntaxError("Unexpected end of file while parsing");
     else
         return (_tokens[this->_pos].type );
 }
@@ -144,7 +142,7 @@ const TokenType &ConfigParser::getCurrentTokenType() const
 const std::string &ConfigParser::getCurrentTokenValue() const
 {
     if (_pos >= _tokens.size())
-        throw std::runtime_error("Unexpected end of file while parsing");
+        throw SyntaxError("Unexpected end of file while parsing");
     else
         return (_tokens[this->_pos].value );
 }
