@@ -39,10 +39,19 @@ int main()
         server {
             listen 8080;
         }
+        server {
+            listen 9090;
+        }
         Expected Behaviour: pass ✅
     */
 
     std::vector<Token> test1;
+    test1.push_back(TokenBuilder::makeWord("server"));
+    test1.push_back(TokenBuilder::makeLBrace());
+    test1.push_back(TokenBuilder::makeWord("listen"));
+    test1.push_back(TokenBuilder::makeWord("8080"));
+    test1.push_back(TokenBuilder::makeSemicolon());
+    test1.push_back(TokenBuilder::makeRBrace());
     test1.push_back(TokenBuilder::makeWord("server"));
     test1.push_back(TokenBuilder::makeLBrace());
     test1.push_back(TokenBuilder::makeWord("listen"));

@@ -28,8 +28,6 @@ ConfigAST ConfigParser::parse(void)
             throw std::runtime_error("Location outside of server");
         else
             throw std::runtime_error("Unexpected token");
-
-        _pos = _tokens.size();
     }
     if (config.servers.empty()) { //discuss: case of empty config
         throw std::runtime_error("Config must contain at least one server block");
@@ -67,8 +65,6 @@ ServerNode ConfigParser::parseServer()
         }
     }
     checkMandatoryToken(RBRACE, "without }");
-    if(_pos < _tokens.size()) //for extra closing braces
-        throw std::runtime_error("Unexpected token " + getCurrentTokenValue());
     return (newServer);
 }
 
