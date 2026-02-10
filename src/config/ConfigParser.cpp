@@ -22,7 +22,7 @@ ConfigAST ConfigParser::parse(void)
 
     while (_pos < _tokens.size())
     {
-        if (getCurrentTokenValue() == "server") 
+        if (getCurrentTokenValue() == "server" && getCurrentTokenType() == WORD) 
             config.servers.push_back(parseServer());
         else if (getCurrentTokenValue() == "location") 
             throw std::runtime_error("Location outside of server");
