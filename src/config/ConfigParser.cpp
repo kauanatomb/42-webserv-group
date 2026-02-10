@@ -137,7 +137,7 @@ void ConfigParser::checkMandatoryToken(TokenType type, std::string errorMessage)
         
 /***************************Getters and Setters************************************/
 //**Getters and Setters
-TokenType ConfigParser::getCurrentTokenType()
+const TokenType &ConfigParser::getCurrentTokenType() const
 {
     if (_pos >= _tokens.size())
         throw std::runtime_error("Unexpected end of file while parsing");
@@ -145,7 +145,7 @@ TokenType ConfigParser::getCurrentTokenType()
         return (_tokens[this->_pos].type );
 }
 
-std::string ConfigParser::getCurrentTokenValue()
+const std::string &ConfigParser::getCurrentTokenValue() const
 {
     if (_pos >= _tokens.size())
         throw std::runtime_error("Unexpected end of file while parsing");

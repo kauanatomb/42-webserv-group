@@ -5,7 +5,7 @@
 # include <vector>
 # include "AST.hpp"
 # include "Token.hpp"
-# include <exception>
+# include "ConfigErrors.hpp"
 
 class ConfigParser
 {
@@ -33,8 +33,8 @@ class ConfigParser
         ConfigAST parse(void);
 
         /***************************Getters and Setters************************************/
-        TokenType getCurrentTokenType();
-        std::string getCurrentTokenValue();
+        const TokenType &getCurrentTokenType() const;
+        const std::string &getCurrentTokenValue() const;
         
 };
 
