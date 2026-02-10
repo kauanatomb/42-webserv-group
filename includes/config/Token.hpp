@@ -5,8 +5,7 @@ enum TokenType {
     WORD,
     LBRACE,   // {
     RBRACE,   // }
-    SEMICOLON, // ;
-    EOT
+    SEMICOLON // ;
 };
 
 struct Token {
