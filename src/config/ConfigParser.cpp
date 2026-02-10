@@ -25,9 +25,6 @@ ConfigAST ConfigParser::parse(void)
         else
             throw SyntaxError("Unexpected token");
     }
-    if (config.servers.empty()) { //discuss: case of empty config
-        throw SyntaxError("Config must contain at least one server block");
-    }
     return (config);
 }
 
