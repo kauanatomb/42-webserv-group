@@ -4,13 +4,11 @@
 /************************************OCF***************************************/
 ConfigParser::ConfigParser(const std::vector<Token>& tokens) :  _tokens(tokens), _pos(0)
 {
-    return ;
 }
 
 
 ConfigParser::~ConfigParser(void)
 {
-    return ;
 }
 
 
