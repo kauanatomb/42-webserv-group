@@ -16,15 +16,23 @@ static DirectiveRule makeRule(bool s, bool l, size_t min, size_t max) {
 
 static void validateListenStatic(const Directive& d) {
     if (d.args.empty())
-        throw ValidationError("listen requires interface:port format");
+        throw ValidationError("listen requires at least a port");
     
     std::string addr_port = d.args[0];
+    std::string ip_str;
+    std::string port_str;
     size_t colon_pos = addr_port.rfind(':');
     
-    if (colon_pos == std::string::npos)
-        throw ValidationError("listen: format must be interface:port");
-    
-    std::string port_str = addr_port.substr(colon_pos + 1);
+    if (colon_pos == std::string::npos) {
+        ip_str = "0.0.0.0";
+        port_str = addr_port;
+    } else {
+        ip_str = addr_port.substr(0, colon_pos);
+        port_str = addr_port.substr(colon_pos + 1);
+        if (ip_str.empty())
+            ip_str = "0.0.0.0";
+    }
+
     if (port_str.empty())
         throw ValidationError("listen: port is empty");
     
@@ -131,11 +139,11 @@ ConfigValidator::ConfigValidator() {
     _rules["server_name"] = makeRule(true, false, 1, SIZE_MAX);
     _rules["root"] = makeRule(true, true, 1, 1);
     _rules["index"] = makeRule(true, true, 1, SIZE_MAX);
-    _rules["client_max_body_size"] = makeRule(true, false, 1, 1);
-    _rules["return"] = makeRule(true, true, 1, 2);
-    _rules["error_page"] = makeRule(true, true, 2, SIZE_MAX);
+    _rules["client_max_body_size"] = makeRule(true, true, 1, 1);
+    _rules["return"] = makeRule(false, true, 1, 2);
+    _rules["error_page"] = makeRule(true, true, 2, 2);
     _rules["allow_methods"] = makeRule(false, true, 1, SIZE_MAX);
-    _rules["autoindex"] = makeRule(true, true, 1, 1);
+    _rules["autoindex"] = makeRule(false, true, 1, 1);
     _rules["upload"] = makeRule(false, true, 1, 1);
     _rules["upload_store"] = makeRule(false, true, 1, 1);
     _rules["cgi"] = makeRule(false, true, 1, 1);
