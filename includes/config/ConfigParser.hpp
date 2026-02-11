@@ -17,10 +17,8 @@ class ConfigParser
         ServerNode parseServer();
         LocationNode parseLocation();
         Directive parseDirective();
-        std::string TokenTypeToString(TokenType type) const;
-        void checkMandatoryToken(TokenType type, std::string errorMessage);
+        void checkMandatoryToken(TokenType type, const std::string& errorMessage);
 
-    
     public:
         //***************************OCF************************************/
         ConfigParser(const std::vector<Token>& tokens);

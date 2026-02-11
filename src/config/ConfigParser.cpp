@@ -38,39 +38,26 @@ ServerNode ConfigParser::parseServer()
 
     checkMandatoryToken(LBRACE, "without {");
 
-    if(_pos >= _tokens.size()) 
-        throw SyntaxError("without }");
-    
-
-    while(_pos < _tokens.size() && _tokens[this->_pos].type != RBRACE)
+    while(_pos < _tokens.size() && getCurrentTokenType() != RBRACE)
     {
-        if (getCurrentTokenValue() == "location")
+        if (getCurrentTokenValue() == "location" && getCurrentTokenType() == WORD)
         {
             LocationNode newLocation = parseLocation();
             newServer.locations.push_back(newLocation);
         }
-        else
+        else if (getCurrentTokenType() == WORD)
         {
             Directive newDirective = parseDirective();
             newServer.directives.push_back(newDirective);
         }
+        else
+            throw SyntaxError("Server: Unexpected token");
     }
     checkMandatoryToken(RBRACE, "without }");
     return (newServer);
 }
 
 
-
-std::string ConfigParser::TokenTypeToString(TokenType type) const
-{
-    switch (type) {
-        case WORD:      return "word";
-        case LBRACE:    return "'{'";
-        case RBRACE:    return "'}'";
-        case SEMICOLON: return "';'";
-        default:        return "unknown";
-    }
-}
 
 // Grammar directive:     → WORD WORD* ";"
 Directive ConfigParser::parseDirective()
@@ -97,20 +84,20 @@ Directive ConfigParser::parseDirective()
     return (newDirective);
 }
 
-
 //Grammar location:      → "location" WORD "{" directive* "}"
 LocationNode ConfigParser::parseLocation()
 {
     LocationNode newLocation;
     
-    if (getCurrentTokenValue() == "location")
-        _pos++;
+    _pos++; // Skip "location" keyword
 
     if(_pos >= _tokens.size()) 
-        throw SyntaxError("Location : Unexpected token");
+        throw SyntaxError("Location: missing path");
     if (getCurrentTokenType() != WORD) 
-        throw SyntaxError("Location : Unexpected token"); 
+        throw SyntaxError("Location: path must be a word"); 
     newLocation.path = getCurrentTokenValue();
+    if (newLocation.path.empty())
+        throw SyntaxError("Location: path cannot be empty");
     _pos++;
 
     checkMandatoryToken(LBRACE, "Without {" );
@@ -124,7 +111,7 @@ LocationNode ConfigParser::parseLocation()
 }
 
 
-void ConfigParser::checkMandatoryToken(TokenType type, std::string errorMessage)
+void ConfigParser::checkMandatoryToken(TokenType type, const std::string& errorMessage)
 {
     if(_pos >= _tokens.size()) 
         throw SyntaxError(errorMessage);
@@ -150,4 +137,3 @@ const std::string &ConfigParser::getCurrentTokenValue() const
     else
         return (_tokens[this->_pos].value );
 }
-
