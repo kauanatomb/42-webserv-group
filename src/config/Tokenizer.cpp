@@ -2,8 +2,6 @@
 #include <iostream>
 #include <cctype>
 #include <vector>
-#include <sstream>
-#include <cstdio>
 
 Tokenizer::Tokenizer(std::istream& in) : _in(in) {}
 
@@ -38,7 +36,7 @@ void Tokenizer::skipWhitespace()
         }
         if (ch == EOF)
             return;
-        if (!std::isspace(static_cast<unsigned char>(ch)))
+        if (ch >= 0 && !std::isspace(static_cast<unsigned char>(ch)))
             return;
         getChar();
     }
@@ -72,27 +70,18 @@ std::vector<Token> Tokenizer::tokenizer()
 
         //WORD: read until whitespace or delimiter or #
         std::string word;
+        word.reserve(32); // Reserve space to avoid reallocations
         while (true)
         {
             ch = peekChar();
             if (ch == EOF)
                 break;
-            if (ch == '#' || std::isspace(static_cast<unsigned char>(ch)) || isDelimiter(ch))
+            if (ch == '#' || isDelimiter(ch) || (ch >= 0 && std::isspace(static_cast<unsigned char>(ch))))
                 break;
-            //consume char
-            int c = getChar();
-            if (c == EOF)
-                break;
-            word.push_back(static_cast<char>(c));
+            word.push_back(static_cast<char>(getChar()));
         }
-//if word is empty, just consume one char to avoid infinite loop
-//do not THROW
-        if (word.empty()) 
-        {
-            getChar();
-            continue;
-        }
-        tokens.push_back(Token(WORD, word));
+        if (!word.empty())
+            tokens.push_back(Token(WORD, word));
     }
 
     return tokens;
