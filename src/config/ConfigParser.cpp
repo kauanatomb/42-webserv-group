@@ -103,7 +103,13 @@ LocationNode ConfigParser::parseLocation()
     if (getCurrentTokenValue() == "location")
         _pos++;
 
-    checkMandatoryToken(WORD, "Location : Unexpected token" );
+    if(_pos >= _tokens.size()) 
+        throw SyntaxError("Location : Unexpected token");
+    if (getCurrentTokenType() != WORD) 
+        throw SyntaxError("Location : Unexpected token"); 
+    newLocation.path = getCurrentTokenValue();
+    _pos++;
+
     checkMandatoryToken(LBRACE, "Without {" );
     while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) 
     {
