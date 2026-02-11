@@ -27,8 +27,8 @@ void ConfigLoader::load(const std::string& path) {
 
     // print AST for debug
     // ConfigParser::printAST(ast);
-    ConfigValidator validator;
-    validator.validate(ast);
+    // ConfigValidator validator;
+    // validator.validate(ast);
 
     // return ast;
 }
