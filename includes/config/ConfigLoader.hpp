@@ -5,5 +5,5 @@
 
 class ConfigLoader {
     public:
-        static void load(const std::string& path);
+        static ConfigAST load(const std::string& path);
 };

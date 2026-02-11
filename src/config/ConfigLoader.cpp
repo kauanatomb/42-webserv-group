@@ -6,7 +6,7 @@
 #include "config/ConfigValidator.hpp"
 #include "config/ConfigErrors.hpp"
 
-void ConfigLoader::load(const std::string& path) {
+ConfigAST ConfigLoader::load(const std::string& path) {
     if (path.empty())
         throw ConfigError("config path is empty");
 
@@ -20,15 +20,15 @@ void ConfigLoader::load(const std::string& path) {
     Tokenizer tokenizer(file);
     std::vector<Token> tokens = tokenizer.tokenizer();
     //print tokens for debug
-    Tokenizer::printTokens(tokens);
+    // Tokenizer::printTokens(tokens);
 
     ConfigParser parser(tokens);
     ConfigAST ast = parser.parse();
 
     // print AST for debug
-    ConfigParser::printAST(ast);
-    // ConfigValidator validator;
-    // validator.validate(ast);
+    // ConfigParser::printAST(ast);
+    ConfigValidator validator;
+    validator.validate(ast);
 
-    // return ast;
+    return ast;
 }
