@@ -34,8 +34,6 @@ ServerNode ConfigParser::parseServer()
 {   
     ServerNode newServer;
 
-    if (getCurrentTokenValue() != "server") 
-        throw SyntaxError("Unexpected token value:" + TokenTypeToString(getCurrentTokenType())  + ", instead of \"server\"");
     _pos++;
 
     checkMandatoryToken(LBRACE, "without {");
