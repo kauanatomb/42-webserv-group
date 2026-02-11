@@ -35,10 +35,6 @@ class ConfigParser
         /***************************Getters and Setters************************************/
         const TokenType &getCurrentTokenType() const;
         const std::string &getCurrentTokenValue() const;
-        
 };
 
-
-
 #endif
-

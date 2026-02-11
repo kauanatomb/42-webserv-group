@@ -1,5 +1,3 @@
-// tokenizer class
-
 #pragma once
 #include <vector>
 #include <istream>

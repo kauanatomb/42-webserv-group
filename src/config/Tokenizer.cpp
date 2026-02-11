@@ -1,5 +1,3 @@
-// tokenizer implementation
-
 #include "config/Tokenizer.hpp"
 #include <iostream>
 #include <cctype>
@@ -112,7 +110,6 @@ void Tokenizer::printTokens(const std::vector<Token>& tokens)
             case LBRACE:      std::cout << "LBRACE"; break;
             case RBRACE:      std::cout << "RBRACE"; break;
             case SEMICOLON:   std::cout << "SEMICOLON"; break;
-//          case EOT:         std::cout <<  "END"; break;
             default:              std::cout << "UNKNOWN"; break;
         }
         std::cout << " value='" << t.value << "'\n";
