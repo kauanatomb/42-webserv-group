@@ -12,23 +12,25 @@
 
 CXX = c++
 CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
-INFILE = src/main.cpp src/config/ConfigParser.cpp src/debug/ASTPrinter.cpp  \
-		 src/debug/TokenBuilder.cpp  
+INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
+			src/config/ConfigParser.cpp src/config/ConfigValidator.cpp 
 
-OBJ = $(INFILE:.cpp=.o)
+OBJ_DIR = obj
+OBJ = $(INFILE:%.cpp=$(OBJ_DIR)/%.o)
 
 NAME = webserv
 
 all: $(NAME)
 
-$(NAME):$(OBJ)
+$(NAME): $(OBJ)
 	$(CXX) $(CXX_FLAGS) $(OBJ) -o $(NAME)
 
-%.o: %.cpp
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXX_FLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)
+	rm -rf $(OBJ_DIR)
 
 fclean: clean
 	rm -f $(NAME)
@@ -36,5 +38,3 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
-
-## pending: put object files to obj folder of config code
