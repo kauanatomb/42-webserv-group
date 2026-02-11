@@ -79,8 +79,13 @@ Directive ConfigParser::parseDirective()
 {
     Directive newDirective;
 
-    newDirective.name = getCurrentTokenValue(); //assign name with existence verified
-    _pos++;
+    if (getCurrentTokenType() == WORD)
+    {
+        newDirective.name = getCurrentTokenValue(); 
+        _pos++;
+    }
+    else
+        throw SyntaxError("Unexpected token");
 
     if(_pos >= _tokens.size()) 
         throw SyntaxError("Directive without ;");
