@@ -29,10 +29,12 @@ class ConfigParser
         @brief Function that returns a ConfigAST structure containing the server nodes, given a tokenized version of the configuration file
         */
         ConfigAST parse(void);
-
+        
         /***************************Getters and Setters************************************/
         const TokenType &getCurrentTokenType() const;
         const std::string &getCurrentTokenValue() const;
+
+        static void printAST(const ConfigAST& ast);
 };
 
 #endif

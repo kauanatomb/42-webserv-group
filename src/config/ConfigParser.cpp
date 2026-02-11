@@ -137,3 +137,32 @@ const std::string &ConfigParser::getCurrentTokenValue() const
     else
         return (_tokens[this->_pos].value );
 }
+
+// DEBUG function
+
+void ConfigParser::printAST(const ConfigAST& ast) {
+    for (size_t i = 0; i < ast.servers.size(); ++i) {
+        const ServerNode& server = ast.servers[i];
+        std::cout << "Server " << i << ":\n";
+        for (size_t j = 0; j < server.directives.size(); ++j) {
+            const Directive& dir = server.directives[j];
+            std::cout << "  Directive: " << dir.name << " Args:";
+            for (size_t k = 0; k < dir.args.size(); ++k) {
+                std::cout << " " << dir.args[k];
+            }
+            std::cout << "\n";
+        }
+        for (size_t j = 0; j < server.locations.size(); ++j) {
+            const LocationNode& loc = server.locations[j];
+            std::cout << "  Location: " << loc.path << "\n";
+            for (size_t k = 0; k < loc.directives.size(); ++k) {
+                const Directive& dir = loc.directives[k];
+                std::cout << "    Directive: " << dir.name << " Args:";
+                for (size_t l = 0; l < dir.args.size(); ++l) {
+                    std::cout << " " << dir.args[l];
+                }
+                std::cout << "\n";
+            }
+        }
+    }
+}
