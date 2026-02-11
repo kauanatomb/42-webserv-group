@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cctype>
 #include <vector>
+#include <cstdio>  // For EOF
 
 Tokenizer::Tokenizer(std::istream& in) : _in(in) {}
 
