@@ -51,7 +51,7 @@ ServerNode ConfigParser::parseServer()
             LocationNode newLocation = parseLocation();
             newServer.locations.push_back(newLocation);
         }
-        else if (getCurrentTokenType() == WORD)
+        else
         {
             Directive newDirective = parseDirective();
             newServer.directives.push_back(newDirective);
