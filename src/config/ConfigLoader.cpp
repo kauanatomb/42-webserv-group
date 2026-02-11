@@ -18,9 +18,9 @@ void ConfigLoader::load(const std::string& path) {
         throw ConfigError("config file is empty");
 
     Tokenizer tokenizer(file);
-    std::vector<Token> tokens = tokenizer.tokenize();
+    std::vector<Token> tokens = tokenizer.tokenizer();
     //print tokens for debug
-    // Tokenizer::printTokens(tokens);
+    Tokenizer::printTokens(tokens);
 
     ConfigParser parser(tokens);
     ConfigAST ast = parser.parse();
