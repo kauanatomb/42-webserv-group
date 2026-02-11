@@ -24,9 +24,9 @@ ConfigAST ConfigLoader::load(const std::string& path) {
 
     ConfigParser parser(tokens);
     ConfigAST ast = parser.parse();
-
     // print AST for debug
     // ConfigParser::printAST(ast);
+    
     ConfigValidator validator;
     validator.validate(ast);
 
