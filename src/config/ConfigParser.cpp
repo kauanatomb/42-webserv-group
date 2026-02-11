@@ -44,7 +44,7 @@ ServerNode ConfigParser::parseServer()
         throw SyntaxError("without }");
     
 
-    while( _tokens[this->_pos].type != RBRACE && _pos < _tokens.size())
+    while(_pos < _tokens.size() && _tokens[this->_pos].type != RBRACE)
     {
         if (getCurrentTokenValue() == "location")
         {
@@ -90,7 +90,7 @@ Directive ConfigParser::parseDirective()
     if(_pos >= _tokens.size()) 
         throw SyntaxError("Directive without ;");
 
-    while(getCurrentTokenType() == WORD && _pos < _tokens.size() )
+    while(_pos < _tokens.size() && getCurrentTokenType() == WORD)
     {
         newDirective.args.push_back(getCurrentTokenValue());
         _pos++;
@@ -116,7 +116,7 @@ LocationNode ConfigParser::parseLocation()
     _pos++;
 
     checkMandatoryToken(LBRACE, "Without {" );
-    while(getCurrentTokenType() != RBRACE && _pos < _tokens.size()) 
+    while(_pos < _tokens.size() && getCurrentTokenType() != RBRACE) 
     {
         Directive newDirective = parseDirective();
         newLocation.directives.push_back(newDirective);
