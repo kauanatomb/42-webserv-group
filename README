@@ -1,4 +1,3 @@
-
 ## Grammar rules for parsing
 config        → server*
 server        → "server" "{" (directive | location)* "}"
