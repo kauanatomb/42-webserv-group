@@ -1,0 +1,33 @@
+## Grammar rules for parsing
+config        → server*
+server        → "server" "{" (directive | location)* "}"
+location      → "location" WORD "{" directive* "}"
+directive     → WORD WORD* ";"
+
+## Parsing output
+
+Generic example
+Config
+└── server
+    ├── directives
+    │   ├── listen
+    │   ├── server_name
+    │   ├── root
+    │   └── index
+    └── locations
+        ├── location /
+        │   └── directives
+        ├── location /upload
+        │   └── directives
+        └── location /cgi-bin
+            └── directives
+
+## Concrete Example of multiple servers
+ConfigAST
+├── ServerNode (8080)
+│   └── locations
+└── ServerNode (8081)
+    └── locations
+
+## Define Expected behaviour
+    + empty config
