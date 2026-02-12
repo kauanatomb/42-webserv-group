@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# build artifacts (adjust if your repo uses other names)
+obj/
+*.o
+webserv
+
+# logs
+*.log
