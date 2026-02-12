@@ -136,13 +136,13 @@ static void validateOnOffStatic(const Directive& d) {
 
 ConfigValidator::ConfigValidator() {
     _rules["listen"] = makeRule(true, false, 1, 1);
-    _rules["server_name"] = makeRule(true, false, 1, SIZE_MAX);
+    _rules["server_name"] = makeRule(true, false, 1, std::numeric_limits<size_t>::max());
     _rules["root"] = makeRule(true, true, 1, 1);
-    _rules["index"] = makeRule(true, true, 1, SIZE_MAX);
+    _rules["index"] = makeRule(true, true, 1, std::numeric_limits<size_t>::max());
     _rules["client_max_body_size"] = makeRule(true, true, 1, 1);
     _rules["return"] = makeRule(false, true, 1, 2);
     _rules["error_page"] = makeRule(true, true, 2, 2);
-    _rules["allow_methods"] = makeRule(false, true, 1, SIZE_MAX);
+    _rules["allow_methods"] = makeRule(false, true, 1, std::numeric_limits<size_t>::max());
     _rules["autoindex"] = makeRule(false, true, 1, 1);
     _rules["upload"] = makeRule(false, true, 1, 1);
     _rules["upload_store"] = makeRule(false, true, 1, 1);
