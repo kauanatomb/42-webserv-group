@@ -20,3 +20,4 @@ struct ServerNode {
 struct ConfigAST {
     std::vector<ServerNode> servers;
 };
+
