@@ -3,6 +3,7 @@
 #include <cctype>
 #include <limits>
 #include <iostream>
+#include <cstdio>
 
 static size_t parseClientMaxBodySize(const std::string& value) {
     size_t i = 0;
