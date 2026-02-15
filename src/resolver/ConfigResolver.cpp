@@ -94,7 +94,7 @@ void ConfigResolver::applyServerDirectives(RuntimeServer& server, const std::vec
         else if ((*it).name == "index")
             server.addIndex((*it).args);
         else if ((*it).name == "client_max_body_size")
-            server.setClientMaxBodySize(parseClientMaxBodySize((*it).args[0]));
+            server.setClientMaxBodySizeServer(parseClientMaxBodySize((*it).args[0]));
         else if ((*it).name == "error_page") {
             const std::string& path = (*it).args.back();
             for (size_t i = 0; i + 1 < (*it).args.size(); ++i) {
@@ -117,7 +117,7 @@ void ConfigResolver::setDefaults(RuntimeServer& server) {
     }
     
     if (server.getClientMaxBodySize() == 0)
-        server.setClientMaxBodySize(1024 * 1024);
+        server.setClientMaxBodySizeServer(1024 * 1024);
 }
 
 void ConfigResolver::ApplyLocationDirectives(const Directive& dir, RuntimeLocation& loc) {
@@ -151,7 +151,7 @@ RuntimeLocation ConfigResolver::buildLocation(const LocationNode& node, const Ru
     for(std::vector<Directive>::const_iterator it = node.directives.begin(); it != node.directives.end(); ++it) {
         ApplyLocationDirectives(*it, loc);
     }
-    ApplyInherance(loc, parent);
+    ApplyInheritance(loc, parent);
     return loc;
 }
 

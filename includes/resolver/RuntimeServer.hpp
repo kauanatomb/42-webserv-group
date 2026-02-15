@@ -27,7 +27,7 @@ class RuntimeServer {
         void addServerNames(const std::vector<std::string>& names);
         void setRoot(const std::string& value);
         void addIndex(const std::vector<std::string>& values);
-        void setClientMaxBodySize(size_t value);
+        void setClientMaxBodySizeServer(size_t value);
         void addErrorPage(int status, const std::string& path);
         void addLocation(const RuntimeLocation& loc);
         void sortLocations();

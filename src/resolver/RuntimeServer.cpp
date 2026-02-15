@@ -30,7 +30,7 @@ void RuntimeServer::addIndex(const std::vector<std::string>& values) {
     index.insert(index.end(), values.begin(), values.end());
 }
 
-void RuntimeServer::setClientMaxBodySize(size_t value) { client_max_body_size = value; }
+void RuntimeServer::setClientMaxBodySizeServer(size_t value) { client_max_body_size = value; }
 
 void RuntimeServer::addErrorPage(int status, const std::string& path) {
     error_pages[status] = path;
