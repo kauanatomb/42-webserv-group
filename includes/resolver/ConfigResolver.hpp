@@ -13,7 +13,7 @@ class ConfigResolver {
         static void ApplyLocationDirectives(const Directive& dir, RuntimeLocation& loc);
         static void ApplyInheritance(RuntimeLocation& loc, const RuntimeServer& parent);
         // Debug methods
-        static void debugPrintServer(const RuntimeServer& server);
-        static void debugPrintServerBasicInfo(const RuntimeServer& server);
+        static void debugPrintServer(const RuntimeServer& server, const SocketKey& sk);
+        static void debugPrintServerBasicInfo(const RuntimeServer& server, const SocketKey& sk);
         static void debugPrintLocation(const RuntimeLocation& loc, size_t index);
 };
