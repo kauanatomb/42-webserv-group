@@ -6,4 +6,8 @@
 
 struct RuntimeConfig {
     std::map<SocketKey, std::vector<RuntimeServer> > servers;
+
+    const std::map<SocketKey, std::vector<RuntimeServer> >& getServers() const {
+        return servers;
+    }
 };
