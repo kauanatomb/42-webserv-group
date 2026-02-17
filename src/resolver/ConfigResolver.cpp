@@ -40,9 +40,7 @@ RuntimeConfig ConfigResolver::resolve(const ConfigAST& ast) {
         const std::vector<SocketKey>& listens = server.getListens();
         for(std::vector<SocketKey>::const_iterator sk = listens.begin(); sk != listens.end(); ++sk) {
             runtime.servers[*sk].push_back(server);
-            const std::vector<RuntimeServer>& list = runtime.servers[*sk];
-            for (size_t i = 0; i < list.size(); ++i)
-                debugPrintServer(list[i], *sk);
+                debugPrintServer(server, *sk);
         }
     }
     return runtime;
