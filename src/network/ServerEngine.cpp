@@ -87,8 +87,8 @@ void ServerEngine::handlePollEvent(size_t index) {
     Connection& conn = it->second;
     if (pfd.revents & POLLIN)
         conn.onReadable();
-    // if (pfd.revents & POLLOUT)
-    //     conn.onWritable();
+    if (pfd.revents & POLLOUT)
+         conn.onWritable();
     if (conn.isClosed()) {
         closeConnection(pfd.fd);
         return;
@@ -100,11 +100,33 @@ void ServerEngine::handlePollEvent(size_t index) {
 }
 
 void ServerEngine::acceptConnection(int serverFd) {
+    //1- find SocketKey associated with this listening fd
+    SocketKey key;
+    bool found = false;
+
+    for (std::vector<ListeningSocket>::const_iterator it = _listeningSockets.begin();
+        it != _listeningSockets.end(); ++ it)
+        {
+            if (it->fd == serverFd)
+            {
+                key = it->key;
+                found = true;
+                break;
+            }
+        }
+
+        // if not found, refuse accepting:
+        if (!found)
+            return;
+    //2- accept the client:        
     int clientFd = accept(serverFd, NULL, NULL);
     if (clientFd < 0)
         return;
     fcntl(clientFd, F_SETFL, O_NONBLOCK);
-    _connections.insert(std::make_pair(clientFd, Connection(clientFd, _config)));
+    //3- create the connection with the listen key 
+    _connections.insert(std::make_pair(clientFd, Connection(clientFd, _config, key))); //every connection knows where it came from.
+    
+    //add to poll
     pollfd pfd;
     pfd.fd = clientFd;
     pfd.events = POLLIN;

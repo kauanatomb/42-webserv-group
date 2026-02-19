@@ -5,10 +5,10 @@
 
 class Connection {
     public:
-        Connection(int fd, const RuntimeConfig& cfg);
+        Connection(int fd, const RuntimeConfig& cfg, const SocketKey& listenKey);
 
         void onReadable();
-        // void onWritable();
+        void onWritable();
 
         bool isClosed() const;
         bool wantsWrite() const;
@@ -19,6 +19,9 @@ class Connection {
         int _socket_fd;
         std::string _read_buffer;
         std::string _write_buffer;
+
+        //listen socket key used to pick candidate servers from RuntimeConfig
+        SocketKey _listenKey; //to help ReqeuestHandler know which SocketKey group to use
 
         // RequestParser _parser;
         // HttpRequest _request;
