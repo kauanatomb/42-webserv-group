@@ -41,7 +41,7 @@ void Connection::onReadable() {
             // RequestHandler handler(_config);
             // _response = handler.handle(_request);
         // }
-        // _write_buffer = _response.toString();
+        // _write_buffer = _response.serialize();
     // }
 
 }
