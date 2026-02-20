@@ -9,10 +9,10 @@
 Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key) 
     : _socket_fd(fd), 
     _socket_key(socket_key),
-    _config(config),
-    _state(READING),
     _read_buffer(),
     _write_buffer(),
+    _config(config),
+    _state(READING),
     _keep_alive(false) {}
 
 
@@ -26,6 +26,8 @@ bool Connection::isClosed() const {
 
 void Connection::onReadable() {
     (void)_keep_alive;
+    (void)_socket_key;
+    (void)_config;
     //(void)_parser;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
