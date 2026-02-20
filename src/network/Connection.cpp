@@ -1,16 +1,18 @@
 #include "network/Connection.hpp"
+#include "resolver/ServerResolver.hpp"
+#ifdef DEBUG_LOG
 #include "resolver/SocketKeyUtils.hpp" //for debuging
 #include <iostream> //for debugging
+#endif
 #include <sys/socket.h>
-#include <iostream>
 
-Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& listenKey) 
-    : _socket_fd(fd),
-    _read_buffer(), //optional to scielence warnings
-    _write_buffer(), //optional for compilation warnings
-    _listenKey(listenKey),
+Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key) 
+    : _socket_fd(fd), 
+    _socket_key(socket_key),
     _config(config),
     _state(READING),
+    _read_buffer(),
+    _write_buffer(),
     _keep_alive(false) {}
 
 
@@ -24,7 +26,6 @@ bool Connection::isClosed() const {
 
 void Connection::onReadable() {
     (void)_keep_alive;
-    (void)_config;
     //(void)_parser;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
@@ -33,22 +34,17 @@ void Connection::onReadable() {
         _state = CLOSED;
         return;
     }
-    _read_buffer.append(buffer, bytes);
-(void)_listenKey;
-
-#ifdef DEBUG_LOG
-
-    std::cout << "[conn] listenKey=" << SocketKeyUtils::toString(_listenKey)
-              << " bytes=" << bytes << std::endl;
-#endif
-    
-    _write_buffer = 
+    _read_buffer.append(buffer, bytes); 
+    #ifdef STUB_RESPONSE
+     _write_buffer = 
         "HTTP/1.1 200 OK\r\n"
         "Content-Length: 2\r\n"
         "Connection: close\r\n"
         "\r\n"
         "OK";
     _state = WRITING;
+    return;
+    #endif
     //_state = PARSING;
     // if (_parser.parse(_read_buffer, _request)) {
     //     _state = HANDLING;
@@ -74,7 +70,6 @@ void Connection::onWritable() {
         _state = CLOSED;
     }
 }
-
 
 // void Connection::onWritable() {
 //     ssize_t bytes = send(_socket_fd, _write_buffer.c_str(), _write_buffer.size(), 0);

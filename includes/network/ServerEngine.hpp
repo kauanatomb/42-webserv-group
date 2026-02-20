@@ -11,13 +11,8 @@ class ServerEngine {
     private:
         const RuntimeConfig& _config;
 
-        // Listening sockets
-        struct ListeningSocket {
-            SocketKey key;
-            int fd;
-        };
-
-        std::vector<ListeningSocket> _listeningSockets;
+        // fd -> SocketKey for listening sockets
+        std::map<int, SocketKey> _listeningSockets;
 
         // fd -> Connection - active clients
         std::map<int, Connection> _connections;
@@ -31,6 +26,7 @@ class ServerEngine {
         void eventLoop();
         void handlePollEvent(size_t index);
 
+        bool getSocketKey(int fd, SocketKey& key) const;
         void acceptConnection(int serverFd);
         void closeConnection(int clientFd);
 

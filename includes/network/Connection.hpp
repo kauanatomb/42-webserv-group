@@ -2,10 +2,11 @@
 
 #include "../resolver/RuntimeConfig.hpp"
 // #include "../http/RequestParser.hpp"
+// #include "../http/HttpResponse.hpp"
 
 class Connection {
     public:
-        Connection(int fd, const RuntimeConfig& cfg, const SocketKey& listenKey);
+        Connection(int fd, const RuntimeConfig& cfg, const SocketKey& socket_key);
 
         void onReadable();
         void onWritable();
@@ -13,15 +14,11 @@ class Connection {
         bool isClosed() const;
         bool wantsWrite() const;
 
-        // int getFd() const;
-
     private:
         int _socket_fd;
+        SocketKey _socket_key;
         std::string _read_buffer;
         std::string _write_buffer;
-
-        //listen socket key used to pick candidate servers from RuntimeConfig
-        SocketKey _listenKey; //to help ReqeuestHandler know which SocketKey group to use
 
         // RequestParser _parser;
         // HttpRequest _request;
