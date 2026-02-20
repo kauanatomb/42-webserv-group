@@ -11,9 +11,10 @@ ServerEngine::ServerEngine(const RuntimeConfig& config) : _config(config) {}
 
 void ServerEngine::start() {
     createListeningSockets();
-    for (size_t i = 0; i < _listeningSockets.size(); ++i) {
+    for (std::map<int, SocketKey>::iterator it = _listeningSockets.begin();
+            it != _listeningSockets.end(); ++it) {
         pollfd pfd;
-        pfd.fd = _listeningSockets[i].fd;
+        pfd.fd = it->first;
         pfd.events = POLLIN;
         pfd.revents = 0;
         _pollfds.push_back(pfd);
@@ -54,10 +55,7 @@ void ServerEngine::setupSocket(const SocketKey& key) {
         throw RuntimeError("fcntl F_GETFL failed");
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
         throw RuntimeError("fcntl O_NONBLOCK failed");
-    ListeningSocket ls;
-    ls.key = key;
-    ls.fd = fd;
-    _listeningSockets.push_back(ls);
+    _listeningSockets[fd] = key;
 }
 
 void ServerEngine::eventLoop() {
@@ -87,8 +85,8 @@ void ServerEngine::handlePollEvent(size_t index) {
     Connection& conn = it->second;
     if (pfd.revents & POLLIN)
         conn.onReadable();
-    // if (pfd.revents & POLLOUT)
-    //     conn.onWritable();
+    if (pfd.revents & POLLOUT)
+        conn.onWritable();
     if (conn.isClosed()) {
         closeConnection(pfd.fd);
         return;
@@ -99,12 +97,24 @@ void ServerEngine::handlePollEvent(size_t index) {
         pfd.events = POLLIN;
 }
 
+bool ServerEngine::getSocketKey(int fd, SocketKey& key) const {
+    std::map<int, SocketKey>::const_iterator it = _listeningSockets.find(fd);
+    if (it == _listeningSockets.end())
+        return false;
+    key = it->second;
+    return true;
+}
+
 void ServerEngine::acceptConnection(int serverFd) {
+    SocketKey key;
+    if (!getSocketKey(serverFd, key))
+        return;
+    
     int clientFd = accept(serverFd, NULL, NULL);
     if (clientFd < 0)
         return;
     fcntl(clientFd, F_SETFL, O_NONBLOCK);
-    _connections.insert(std::make_pair(clientFd, Connection(clientFd, _config)));
+    _connections.insert(std::make_pair(clientFd, Connection(clientFd, _config, key)));
     pollfd pfd;
     pfd.fd = clientFd;
     pfd.events = POLLIN;

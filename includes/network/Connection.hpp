@@ -2,21 +2,21 @@
 
 #include "../resolver/RuntimeConfig.hpp"
 // #include "../http/RequestParser.hpp"
+// #include "../http/HttpResponse.hpp"
 
 class Connection {
     public:
-        Connection(int fd, const RuntimeConfig& cfg);
+        Connection(int fd, const RuntimeConfig& cfg, const SocketKey& socket_key);
 
         void onReadable();
-        // void onWritable();
+        void onWritable();
 
         bool isClosed() const;
         bool wantsWrite() const;
 
-        // int getFd() const;
-
     private:
         int _socket_fd;
+        SocketKey _socket_key;
         std::string _read_buffer;
         std::string _write_buffer;
 
