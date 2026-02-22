@@ -123,7 +123,7 @@ void Connection::onReadable() {
 
     _state = PARSING;
 
-    // Uncomment when Dev2 is merged:
+    // Uncomment when Fran parser is merged:
     // if (_parser.parse(_read_buffer, _request)) {
     //     if (_parser.getHasError()) {
     //         int status = _parser.getErrorStatus();
