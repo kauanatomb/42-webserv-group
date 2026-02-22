@@ -1,30 +1,28 @@
 #include "network/Connection.hpp"
-
-//HTTP
-#include "httpCore/HttpRequest.hpp"
-#include "httpCore/HttpResponse.hpp"
-
-//App logic
-#include "network/RequestHandler.hpp"
 #include "resolver/ServerResolver.hpp"
-
-//system
 #include <sys/socket.h>
 
 #ifdef DEBUG_LOG
 # include "resolver/SocketKeyUtils.hpp"
 # include <iostream>
-#endif 
+#endif
 
-Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key) 
-    : _socket_fd(fd), 
-    _socket_key(socket_key),
-    _read_buffer(),
-    _write_buffer(),
-    _config(config),
-    _state(READING),
-    _keep_alive(false) {}
+// TEMP only allow calling handler without final parser
+#ifdef TEMP_NO_PARSER
+# include "httpCore/HttpRequest.hpp"
+# include "httpCore/HttpResponse.hpp"
+# include "network/RequestHandler.hpp"
+# include <string>
+#endif
 
+Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key)
+    : _socket_fd(fd),
+      _socket_key(socket_key),
+      _read_buffer(),
+      _write_buffer(),
+      _config(config),
+      _state(READING),
+      _keep_alive(false) {}
 
 bool Connection::wantsWrite() const {
     return _state == WRITING;
@@ -34,11 +32,57 @@ bool Connection::isClosed() const {
     return _state == CLOSED;
 }
 
+#ifdef TEMP_NO_PARSER
+static std::string extractHostHeader(const std::string& buf)
+{
+    std::string host = "";
+    std::string::size_type pos = buf.find("Host:");
+    if (pos == std::string::npos)
+        return host;
+
+    pos += 5;
+    while (pos < buf.size() && (buf[pos] == ' ' || buf[pos] == '\t'))
+        ++pos;
+
+    std::string::size_type end = buf.find("\r\n", pos);
+    if (end == std::string::npos)
+        return host;
+
+    host = buf.substr(pos, end - pos);
+    return host;
+}
+
+static void fillStubRequestFromStartLine(HttpRequest& req, const std::string& buf)
+{
+    // Defaults
+    req.method = "GET";
+    req.uri = "/";
+    req.version = "HTTP/1.1";
+
+    // Parse "METHOD SP URI SP VERSION\r\n"
+    std::string::size_type lineEnd = buf.find("\r\n");
+    if (lineEnd == std::string::npos)
+        return;
+
+    std::string startLine = buf.substr(0, lineEnd);
+
+    std::string::size_type sp1 = startLine.find(' ');
+    if (sp1 == std::string::npos)
+        return;
+
+    std::string::size_type sp2 = startLine.find(' ', sp1 + 1);
+    if (sp2 == std::string::npos)
+        return;
+
+    req.method = startLine.substr(0, sp1);
+    req.uri = startLine.substr(sp1 + 1, sp2 - (sp1 + 1));
+    req.version = startLine.substr(sp2 + 1);
+}
+#endif
+
 void Connection::onReadable() {
     (void)_keep_alive;
-    (void)_socket_key;
-    (void)_config;
-    //(void)_parser;
+
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
@@ -46,8 +90,9 @@ void Connection::onReadable() {
         _state = CLOSED;
         return;
     }
-    _read_buffer.append(buffer, bytes); 
-    
+
+    _read_buffer.append(buffer, bytes);
+
 #ifdef STUB_RESPONSE
     _write_buffer =
         "HTTP/1.1 200 OK\r\n"
@@ -57,47 +102,47 @@ void Connection::onReadable() {
         "OK";
     _state = WRITING;
     return;
-#else
-    // TEMP bypass parser until Fran parser is integrated:
-    // Build a minimal request and call handler once per connection.
-    HttpRequest req;
-    req.method = "GET";
-    req.uri = "/";            // you can later parse this from _read_buffer
-    req.version = "HTTP/1.1";
+#endif
 
-    // Try to extract Host header very simply (optional for now)
-    std::string host = "";
-    std::string::size_type pos = _read_buffer.find("Host:");
-    if (pos != std::string::npos) {
-        pos += 5;
-        while (pos < _read_buffer.size() && (_read_buffer[pos] == ' ' || _read_buffer[pos] == '\t'))
-            ++pos;
-        std::string::size_type end = _read_buffer.find("\r\n", pos);
-        if (end != std::string::npos)
-            host = _read_buffer.substr(pos, end - pos);
-    }
+#ifdef TEMP_NO_PARSER
+    // TEMP: bypass full parser to unblock Handler + location matching
+    HttpRequest req;
+    fillStubRequestFromStartLine(req, _read_buffer);
+
+    std::string host = extractHostHeader(_read_buffer);
 
     const RuntimeServer* server = ServerResolver::resolve(_config, _socket_key, host);
 
     RequestHandler handler;
     HttpResponse res = handler.handle(req, server);
+
     _write_buffer = res.serialize();
     _state = WRITING;
     return;
 #endif
-}
 
-    //_state = PARSING;
+    _state = PARSING;
+
+    // Uncomment when Dev2 is merged:
     // if (_parser.parse(_read_buffer, _request)) {
-    //     _state = HANDLING;
-    //     _request.print();
-
-    //     RequestHandler handler(_config);
-    //     _response = handler.handle(_request);
-    //     _write_buffer = _response.toString();
-    //     _state = ConnectionState::WRITING;
-    //}
-
+    //     if (_parser.getHasError()) {
+    //         int status = _parser.getErrorStatus();
+    //         _response = HttpResponse::fromStatus(status);
+    //     } else {
+    //         _request.print();
+    //         const RuntimeServer* server =
+    //             ServerResolver::resolve(_config, _socket_key, _request.getHeader("Host"));
+    //         if (!server) {
+    //             _response = HttpResponse::fromStatus(500);
+    //         } else {
+    //             // RequestHandler handler;
+    //             // _response = handler.handle(_request, server);
+    //         }
+    //     }
+    //     _write_buffer = _response.serialize();
+    //     _state = WRITING;
+    // }
+}
 
 void Connection::onWritable() {
     ssize_t bytes = send(_socket_fd, _write_buffer.c_str(), _write_buffer.size(), 0);
@@ -105,27 +150,12 @@ void Connection::onWritable() {
         _state = CLOSED;
         return;
     }
+
     _write_buffer.erase(0, bytes);
-    if (_write_buffer.empty()) 
-    {
+
+    if (_write_buffer.empty()) {
+        // if (_keep_alive) resetForNextRequest();
+        // else
         _state = CLOSED;
     }
 }
-
-// void Connection::onWritable() {
-//     ssize_t bytes = send(_socket_fd, _write_buffer.c_str(), _write_buffer.size(), 0);
-//     if (bytes <= 0) {
-//         _state = ConnectionState::CLOSED;
-//         return;
-//     }
-//     _write_buffer.erase(0, bytes);
-//     if (_write_buffer.empty()) {
-//         if (_keep_alive) {
-//             resetForNextRequest();
-//         } else {
-//             _state = ConnectionState::CLOSED;
-//         }
-//     }
-// }
-
-

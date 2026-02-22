@@ -6,12 +6,12 @@
 #    By: fatinalatrach <fatinalatrach@student.42.fr +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/10 10:18:02 by ktombola          #+#    #+#              #
-#    Updated: 2026/02/22 20:28:14 by fatinalatrach    ###   ########.fr        #
+#    Updated: 2026/02/22 23:47:53 by fatinalatrach    ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CXX = c++
-CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
+CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes -DTEMP_NO_PARSER
 INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/config/ConfigParser.cpp src/config/ConfigValidator.cpp \
 			src/resolver/ConfigResolver.cpp src/resolver/SocketKeyUtils.cpp \
