@@ -16,6 +16,9 @@ class RequestParser
         //RequestParser &operator=(const RequestParser &other);
         ~RequestParser();
         /*************** Methods ***************/
+        /** 
+            @brief Return false if incomplete, true if complete or error 
+        */
         bool parse(std::string& buffer, HttpRequest& request);
         bool isComplete() const;
         bool hasError() const;
