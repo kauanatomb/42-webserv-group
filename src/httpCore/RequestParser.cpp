@@ -11,17 +11,22 @@ RequestParser::~RequestParser(void)
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
     if (_state == START_LINE)
-        parseStartLine(buffer, request)
+        if (!parseStartLine(buffer, request))
+            return (false);
+    _state = HEADERS;
+
 }
 
 bool RequestParser::isComplete() const
 {
-
+    if (_state == COMPLETE)
+        return (true);
+    return (false;)
 }
 
 bool RequestParser::hasError() const
 {
-
+    return (_has_error);
 }
 int &RequestParser::getErrorStatus() const
 {
@@ -32,11 +37,15 @@ int &RequestParser::getErrorStatus() const
 /************ Utils ************/
 static bool false checkCRLF()
 {
-
-        return (status);
+        
 }
 /************ Helper Functions ************/
 
+
+static bool validateMethod(std::string)
+{
+
+}
 /* Request-Line = Method SP Request-URI SP HTTP-Version CRLF*/
 static bool  parseStartLine(std::string& buffer, HttpRequest& request)
 {
@@ -45,9 +54,19 @@ static bool  parseStartLine(std::string& buffer, HttpRequest& request)
     if (pos == std::string::npos) {
         return false;  // Need more data
     }
-    /* 1. check method */
     
+    std::string line = buffer.substr(0, pos);
+    std::istringstream iss(line);
+    iss >> request.method >> request.uri >> request.version;
+    /* 1. check method */
+    if (!validateMethod(request.method)) {
+        _error_status = 405;
+        _has_error = true;
+        _state = ERROR;
+        return true;
+    }
     /* 2. check space */
+
     /* 3. check URI */
     /* 4. check space */
     /* 2.  */
