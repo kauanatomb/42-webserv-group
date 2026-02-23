@@ -8,6 +8,9 @@ class RequestParser
     private:
         enum State {START_LINE, HEADERS, BODY, COMPLETE };
         State _state;
+        int _error_status;
+        bool _has_error;
+
 
     public:
         /*************** Class defaults ***************/
@@ -22,6 +25,7 @@ class RequestParser
         bool parse(std::string& buffer, HttpRequest& request);
         bool isComplete() const;
         bool hasError() const;
+        int &getErrorStatus() const;
 
 };
 

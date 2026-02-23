@@ -1,10 +1,10 @@
-## Grammar rules for parsing
+## Grammar rules for parsing Configuration File
 config        → server*
 server        → "server" "{" (directive | location)* "}"
 location      → "location" WORD "{" directive* "}"
 directive     → WORD WORD* ";"
 
-## Parsing output
+### Parsing output
 
 Generic example
 Config
@@ -22,12 +22,37 @@ Config
         └── location /cgi-bin
             └── directives
 
-## Concrete Example of multiple servers
+### Concrete Example of multiple servers
 ConfigAST
 ├── ServerNode (8080)
 │   └── locations
 └── ServerNode (8081)
     └── locations
 
-## Define Expected behaviour
-    + empty config
+
+## Grammar rules for HTTP request
+
+HTTP-Request   = Request-Line
+                 *(Header-Field)
+                 CRLF
+                 [Message-Body]
+
+Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
+
+Method         = "GET" | "POST" | "DELETE"
+
+Request-URI    = absoluteURI | abs_path
+abs_path       = "/" *( segment )
+segment        = *pchar
+
+HTTP-Version   = "HTTP/" 1*DIGIT "." 1*DIGIT
+
+Header-Field   = Field-Name ":" [Field-Value] CRLF
+
+Field-Name     = token
+Field-Value    = *( any-char )
+
+Message-Body   = *OCTET
+
+SP             = <space character (0x20)>
+CRLF           = <carriage return (0x0D) + line feed (0x0A)>
