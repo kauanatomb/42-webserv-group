@@ -11,11 +11,13 @@ RequestParser::~RequestParser(void)
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
     if (_state == START_LINE)
-        parseStartLine()
+        parseStartLine(buffer, request)
 }
 
 bool RequestParser::isComplete() const
-{}
+{
+
+}
 
 bool RequestParser::hasError() const
 {
@@ -36,14 +38,15 @@ static bool false checkCRLF()
 /************ Helper Functions ************/
 
 /* Request-Line = Method SP Request-URI SP HTTP-Version CRLF*/
-static bool  parseStartLine()
+static bool  parseStartLine(std::string& buffer, HttpRequest& request)
 {
     /* 0. validate CRLF */
-            size_t pos = buffer.find("\r\n");
-        if (pos == std::string::npos) {
-            return false;  // Need more data
-        }
+    size_t pos = buffer.find("\r\n");
+    if (pos == std::string::npos) {
+        return false;  // Need more data
+    }
     /* 1. check method */
+    
     /* 2. check space */
     /* 3. check URI */
     /* 4. check space */
