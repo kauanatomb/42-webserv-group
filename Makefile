@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: fatinalatrach <fatinalatrach@student.42.fr +#+  +:+       +#+         #
+#    By: falatrac <falatrac@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/10 10:18:02 by ktombola          #+#    #+#              #
-#    Updated: 2026/02/22 23:47:53 by fatinalatrach    ###   ########.fr        #
+#    Updated: 2026/02/23 14:03:59 by falatrac         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,7 +18,7 @@ INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/resolver/ServerResolver.cpp \
 			src/resolver/RuntimeServer.cpp src/resolver/RuntimeLocation.cpp \
 			src/network/Connection.cpp src/network/ServerEngine.cpp \
-			src/network/RequestHandler.cpp src/httpCore/HttpResponse.cpp 
+			src/httpCore/RequestHandler.cpp src/httpCore/HttpResponse.cpp 
 
 OBJ_DIR = obj
 OBJ = $(INFILE:%.cpp=$(OBJ_DIR)/%.o)

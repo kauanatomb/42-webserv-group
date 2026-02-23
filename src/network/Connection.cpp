@@ -11,7 +11,7 @@
 #ifdef TEMP_NO_PARSER
 # include "httpCore/HttpRequest.hpp"
 # include "httpCore/HttpResponse.hpp"
-# include "network/RequestHandler.hpp"
+# include "httpCore/RequestHandler.hpp"
 # include <string>
 #endif
 
@@ -112,7 +112,18 @@ void Connection::onReadable() {
     std::string host = extractHostHeader(_read_buffer);
 
     const RuntimeServer* server = ServerResolver::resolve(_config, _socket_key, host);
+    //handle null server here and remove it from handler
 
+    if (!server)
+    {
+        HttpResponse res;
+        res.status_code = 500;
+        res.reason_phrase = "Internal Server Error";
+        res.body = "Resolver returned NULL server \n";
+        _write_buffer = res.serialize();
+        _state = WRITING;
+        return;
+    }
     RequestHandler handler;
     HttpResponse res = handler.handle(req, server);
 
