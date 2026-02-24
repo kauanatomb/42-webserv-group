@@ -42,11 +42,22 @@ static bool false checkCRLF()
 /************ Helper Functions ************/
 
 
-static bool validateMethod(std::string)
+static bool validateMethod(std::string methodName)
 {
-
+    if (methodName == "GET" || methodName == "POST" || methodName == "DELETE")
+        return (true);
+    return (false);
 }
-/* Request-Line = Method SP Request-URI SP HTTP-Version CRLF*/
+
+
+static bool validateVersion(std::string versionName)
+{
+    //logic to verify:  HTTP 1.0 or 1.1
+}
+/* 
+Grammar rule: 
+    Request-Line = Method SP Request-URI SP HTTP-Version CRLF
+*/
 static bool  parseStartLine(std::string& buffer, HttpRequest& request)
 {
     /* 0. validate CRLF */
