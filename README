@@ -32,27 +32,19 @@ ConfigAST
 
 ## Grammar rules for HTTP request
 
-HTTP-Request   = Request-Line
-                 *(Header-Field)
-                 CRLF
-                 [Message-Body]
-
+Request = Request-Line Host-Header *(Other-Header) CRLF [Message-Body]
+-----------------------------------------------------------------
 Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
-
+Header-Field   = Field-Name ":" [Field-Value] CRLF
+Message-Body   = *OCTET
+----------------------------------
+Host-Header    = 
 Method         = "GET" | "POST" | "DELETE"
-
 Request-URI    = absoluteURI | abs_path
 abs_path       = "/" *( segment )
 segment        = *pchar
-
 HTTP-Version   = "HTTP/" 1*DIGIT "." 1*DIGIT
-
-Header-Field   = Field-Name ":" [Field-Value] CRLF
-
 Field-Name     = token
 Field-Value    = *( any-char )
-
-Message-Body   = *OCTET
-
 SP             = <space character (0x20)>
 CRLF           = <carriage return (0x0D) + line feed (0x0A)>
