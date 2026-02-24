@@ -20,8 +20,12 @@ class ServerEngine {
         // poll descriptors
         std::vector<pollfd> _pollfds;
 
+        // Self-pipe for signal handling
+        static int _signalPipe[2];
+
         void createListeningSockets();
         void setupSocket(const SocketKey& key);
+        void setupSignalHandling();
 
         void eventLoop();
         void handlePollEvent(size_t index);
@@ -29,9 +33,13 @@ class ServerEngine {
         bool getSocketKey(int fd, SocketKey& key) const;
         void acceptConnection(int serverFd);
         void closeConnection(int clientFd);
+        void cleanup();
+
+        static void signalHandler(int signum);
 
     public:
         ServerEngine(const RuntimeConfig& config);
+        ~ServerEngine();
 
         void start();
 };
