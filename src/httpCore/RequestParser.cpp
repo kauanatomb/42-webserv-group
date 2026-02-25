@@ -7,14 +7,23 @@ RequestParser::RequestParser(void): _state(START_LINE), _error_status(0), _has_e
 RequestParser::~RequestParser(void)
 {}
 
-/************ Other Methods ************/
+/************ Methods ************/
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
+    /* verify if there is content to parse section*/
     if (_state == START_LINE)
-        if (!parseStartLine(buffer, request))
+        if (!parseStartLine(buffer, request)) // parseStartLine givrs false for incomplete lines: without CRFL
             return (false);
     _state = HEADERS;
-
+    if (_state == HEADERS)
+        if (!parseHeaders)
+            return (false)
+    //_state = BODY // what is the logic for looking for a body or not
+    if (_state == BODY)
+        if (!parseBody(buffer, request))
+    if (_STATE == COMPLETE)
+        return (true);
+    //how do you know when body is finished
 }
 
 bool RequestParser::isComplete() const
@@ -33,209 +42,58 @@ int &RequestParser::getErrorStatus() const
     return (_error_status);
 }
 
-
-/************ Utils ************/
-static bool false checkCRLF()
-{
-        
-}
 /************ Helper Functions ************/
 
-
-static bool validateMethod(std::string methodName)
+/* Method SP Request-URI SP HTTP-Version CRLF */
+static bool parseStartLine()
 {
-    if (methodName == "GET" || methodName == "POST" || methodName == "DELETE")
-        return (true);
-    return (false);
+    /*
+    1. check if Startline is complete by findign crlf, if not return false
+    2. duplicate line and remove from buffer
+    3. store componenets in httprequest class
+    4.1 check for components of line : Method(GET/POST/DELETE)
+        a. if not correct : change error status and put error code
+    4.2 check for components of line : Request-URI(bla/bla)
+        a. if not correct : change error status and put error code
+    4.3 check for components of line : http VERSION(http1.1 / http1.0)
+        a. if not correct : change error status and put error code
+    5. checl for CRLF, if not return false
+    */
 }
 
-
-static bool validateVersion(std::string versionName)
+/* Header-Field   = Field-Name ":" [Field-Value] CRLF */
+static bool parseHeader()
 {
-    //logic to verify:  HTTP 1.0 or 1.1
-}
-/* 
-Grammar rule: 
-    Request-Line = Method SP Request-URI SP HTTP-Version CRLF
-*/
-static bool  parseStartLine(std::string& buffer, HttpRequest& request)
-{
-    /* 0. validate CRLF */
-    size_t pos = buffer.find("\r\n");
-    if (pos == std::string::npos) {
-        return false;  // Need more data
-    }
-    
-    std::string line = buffer.substr(0, pos);
-    std::istringstream iss(line);
-    iss >> request.method >> request.uri >> request.version;
-    /* 1. check method */
-    if (!validateMethod(request.method)) {
-        _error_status = 405;
-        _has_error = true;
-        _state = ERROR;
-        return true;
-    }
-    /* 2. check space */
-
-    /* 3. check URI */
-    /* 4. check space */
-    /* 2.  */
+    /*
+    0. loop to be able to process multiple headers
+    1. check for CRLF, if not return false
+    2. check if the buffer read is only compose of crlf, if yes remove crlf from buffer, and  change to body and break
+    3. store beggining of line and erase from buffer
+    4. check for colon inside line(only grammar rule, verify this later), if not throw error
+    5. store components in httpRequest class
+    0. outside loop: check for mandatory header
+    */
 }
 
+static bool parseBody()
+{
+    /*
+    Evaluate the state: 
+    1.0 check if chunked header exists, verify no content lenght and change state, return true
+    1.1 check if body length exists, verify no chunk header, else return false, change error
+    1.2 else mark as complete 
+        return true
+    2. verify content lenght corresponds to buffer size, else throw errro
+    3. copy and erase from buffer
+    4. assign to httpRequest
+    5. change state to complete and return true. 
+    */
+}
 
-////*****Notes */
-
-
-class RequestParser {
-private:
-    enum State {
-        START_LINE,
-        HEADERS,
-        BODY,
-        COMPLETE,
-        ERROR
-    };
+static bool parseChunkSize()
+{
+    /*
+    0. check for CRLF, else return false
     
-    State _state;
-    int _error_status;
-    bool _has_error;
-    size_t _expected_body_size;
-    
-public:
-    RequestParser() : 
-        _state(START_LINE), 
-        _error_status(0), 
-        _has_error(false),
-        _expected_body_size(0) {}
-    
-    bool parse(std::string& buffer, HttpRequest& request) {
-        while (true) {
-            
-            // ═══════════════════════════════════════════════
-            // STATE 1: Parse request line
-            // Grammar
-            // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
-            // ═══════════════════════════════════════════════
-            if (_state == START_LINE) {  
-                size_t pos = buffer.find("\r\n");  //verify start line is complete by checking CRLN
-                if (pos == std::string::npos) {
-                    return false;  // Wait for more data
-                }
-                
-                std::string line = buffer.substr(0, pos); //take apart START_LINE content in a copy 
-                buffer.erase(0, pos + 2); //clear start line from the buffer
-                
-                // Parse "GET / HTTP/1.1"
-                std::istringstream iss(line);
-                iss >> request.method >> request.uri >> request.version; //fill the class parameters 
-                                                                         //does this method verify that the space exists
-                
-                // Validate
-                if (!validateMethod(request.method)) { 
-                    _error_status = 405; // for this one it just return true without checking the rest of the components if it fails
-
-                    _has_error = true;
-                    _state = ERROR;
-                    return true;
-                } 
-                
-                if (!validateVersion(request.version)) {
-                    _error_status = 505;
-                    _has_error = true;
-                    _state = ERROR;
-                    return true;
-                }
-                
-                // Success, move to next state
-                _state = HEADERS;
-                continue;
-            }
-            
-
-            // ═══════════════════════════════════════════════
-            // STATE 2: Parse headers
-            // Grammar
-            // Field-Name ":" [Field-Value] CRLF
-            // ═══════════════════════════════════════════════
-            if (_state == HEADERS) {
-
-                while (true) {
-                    size_t pos = buffer.find("\r\n"); //beginning of check for complet statement 
-                    if (pos == std::string::npos) {
-                        return false;  // Wait for more data
-                    }
-                    
-                    // Blank line = end of headers
-                    if (pos == 0) {
-                        buffer.erase(0, 2);
-                        _state = BODY;
-                        break;
-                    }
-                    
-                    // Parse "Name: Value"
-                    std::string line = buffer.substr(0, pos);
-                    buffer.erase(0, pos + 2); // end of check of complete statement
-                    
-                    size_t colon = line.find(':');
-                    if (colon == std::string::npos) {
-                        _error_status = 400;
-                        _has_error = true;
-                        _state = ERROR;
-                        return true;
-                    }
-                    
-                    std::string name = line.substr(0, colon);
-                    std::string value = line.substr(colon + 1);
-                    
-                    // Store (lowercase name for case-insensitive)
-                    request.headers[toLowerCase(name)] = trim(value); // is this a map assigment 
-                }
-                // add need to check for host as minium heaser 
-                continue;
-            }
-            
-            // ═══════════════════════════════════════════════
-            // STATE 3: Parse body
-            // ═══════════════════════════════════════════════
-            if (_state == BODY) {
-                // Check for Content-Length
-                if (request.headers.count("content-length")) {
-                    _expected_body_size = 
-                        atoi(request.headers["content-length"].c_str());
-                    
-                    if (buffer.size() < _expected_body_size) {
-                        return false;  // Wait for more data
-                    }
-                    
-                    request.body = buffer.substr(0, _expected_body_size);
-                    buffer.erase(0, _expected_body_size);
-                }
-                // Check for chunked
-                else if (request.headers.count("transfer-encoding") &&
-                         request.headers["transfer-encoding"] == "chunked") {
-                    if (!parseChunked(buffer, request)) {
-                        return false;  // Wait for more data
-                    }
-                }
-                // No body
-                else {
-                    request.body = "";
-                }
-                
-                _state = COMPLETE;
-                return true;
-            }
-            
-            // ═══════════════════════════════════════════════
-            // STATE 4: Complete or Error
-            // ═══════════════════════════════════════════════
-            if (_state == COMPLETE || _state == ERROR) {
-                return true;
-            }
-        }
-    }
-    
-    bool getHasError() const { return _has_error; }
-    int getErrorStatus() const { return _error_status; }
-};
+    */
+}
