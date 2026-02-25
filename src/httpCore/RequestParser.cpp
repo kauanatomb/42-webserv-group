@@ -10,7 +10,7 @@ RequestParser::~RequestParser(void)
 /************ Methods ************/
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
-    /* verify if there is content to parse section*/
+    /* verify if there is content to parse section - not necessary for the moment*/
     if (_state == START_LINE)
         if (!parseStartLine(buffer, request)) // parseStartLine givrs false for incomplete lines: without CRFL
             return (false);
@@ -18,7 +18,6 @@ bool RequestParser::parse(std::string& buffer, HttpRequest& request)
     if (_state == HEADERS)
         if (!parseHeaders)
             return (false)
-    //_state = BODY // what is the logic for looking for a body or not
     if (_state == BODY)
         if (!parseBody(buffer, request))
     if (_STATE == COMPLETE)
@@ -44,12 +43,42 @@ int &RequestParser::getErrorStatus() const
 
 /************ Helper Functions ************/
 
-/* Method SP Request-URI SP HTTP-Version CRLF */
-static bool parseStartLine()
+
+static bool checkCompleteLine(std::string& buffer)
 {
+    size_t pos = buffer.find("\r\n");
+    if (pos == std::string::npos) //check if found 
+        return (false);
+    return (true);
+}
+static std::string copyAndCleanBuffer(std::string& buffer, int pos)
+{
+    size_t pos = buffer.find("\r\n");
+    std::string line = buffer.substr(0, pos);
+    buffer.erase(0, pos + 2);
+}
+/* Method SP Request-URI SP HTTP-Version CRLF */
+
+static RequestParser::setErrorInfo(State state, int error_status, bool has_error)
+{
+    _state = state;
+    error_status = _error_status;
+    has_error = _has_error;
+}
+
+static bool parseStartLine(std::string& buffer, HttpRequest& request)
+{
+
+    if (!checkCompleteLine(buffer)) //1
+        return (false);
+    std::string bufferSection = copyAndCleanBuffer(buffer); //2
+    std::istringstream iss(bufferSection);
+    iss >> request.method >> request.uri >> request.version; //3
+    if 
+
     /*
-    1. check if Startline is complete by findign crlf, if not return false
-    2. duplicate line and remove from buffer
+    1. check if Startline is complete by findign crlf, if not return false D
+    2. duplicate line and remove from buffer D 
     3. store componenets in httprequest class
     4.1 check for components of line : Method(GET/POST/DELETE)
         a. if not correct : change error status and put error code
@@ -79,7 +108,7 @@ static bool parseBody()
 {
     /*
     Evaluate the state: 
-    1.0 check if chunked header exists, verify no content lenght and change state, return true
+    1.0 check if chunked header exists, verify no content lenght and change state-CHUNK_SIZE, return true
     1.1 check if body length exists, verify no chunk header, else return false, change error
     1.2 else mark as complete 
         return true
@@ -90,10 +119,78 @@ static bool parseBody()
     */
 }
 
+
+/*
+Chunked-Body =
+    (size in hex)
+    \r\n
+    (exactly that many bytes)
+    \r\n
+    repeat...
+    until size == 0
+    then:
+        0\r\n
+        \r\n
+*/
 static bool parseChunkSize()
 {
     /*
-    0. check for CRLF, else return false
-    
+    State = CHUNK_SIZE
+
+loop:
+
+    if State == CHUNK_SIZE:
+        if no complete line in buffer:
+            return false
+
+        read line until CRLF
+        parse hex number → chunk_size
+
+        if invalid hex:
+            set ERROR
+            return false
+
+        remove line + CRLF from buffer
+
+        if chunk_size == 0:
+            State = FINAL_CRLF
+        else:
+            State = CHUNK_DATA
+
+
+    if State == CHUNK_DATA:
+        if buffer.size < chunk_size:
+            return false
+
+        read exactly chunk_size bytes
+        append to request.body
+        remove them from buffer
+
+        State = CHUNK_CRLF
+
+
+    if State == CHUNK_CRLF:
+        if buffer.size < 2:
+            return false
+
+        if next two bytes != "\r\n":
+            set ERROR
+            return false
+
+        remove "\r\n"
+        State = CHUNK_SIZE
+
+
+    if State == FINAL_CRLF:
+        if buffer.size < 2:
+            return false
+
+        if next two bytes != "\r\n":
+            set ERROR
+            return false
+
+        remove "\r\n"
+        State = COMPLETE
+        return true
     */
 }

@@ -6,7 +6,7 @@
 class RequestParser
 {
     private:
-        enum State {START_LINE, HEADERS, BODY, COMPLETE };
+        enum State {START_LINE, HEADERS, BODY, CHUNK_SIZE, CHUNK_DATA, CHUNK_CRLF, FINAL_CRLF, COMPLETE };
         State _state;
         int _error_status;
         bool _has_error;
@@ -26,6 +26,9 @@ class RequestParser
         bool isComplete() const;
         bool hasError() const;
         int &getErrorStatus() const;
+        
+        /*************** Getters and Setters ***************/
+        static setErrorInfo(State state, int error_status, bool has_error);
 
 };
 
