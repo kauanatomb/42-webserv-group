@@ -1,6 +1,8 @@
 #include "httpCore/ErrorHandler.hpp"
 #include <fstream>
 #include <sstream>
+#include <limits.h>
+#include <stdlib.h>
 
 std::string ErrorHandler::getReasonPhrase(int code)
 {
@@ -20,39 +22,16 @@ std::string ErrorHandler::getReasonPhrase(int code)
     }
 }
 
-std::string ErrorHandler::readFile(const std::string& path)
+std::string ErrorHandler::resolvePathError(int code, const RuntimeLocation* loc)
 {
-    std::ifstream in(path.c_str(), std::ios::in | std::ios::binary);
-    if (!in.is_open())
-        return "";
-    
-    std::ostringstream ss;
-    ss << in.rdbuf();
-    return ss.str();
-}
-
-std::string ErrorHandler::resolvePathError(int code, const RuntimeServer* server)
-{
-    if (!server)
-        return "";
-
-    const std::map<int, std::string>& pages = server->getErrorPages();
-    std::map<int, std::string>::const_iterator it = pages.find(code);
-    
-    if (it == pages.end())
-        return "";
-
-    const std::string& root = server->getRoot();
-    const std::string& page = it->second;
-
-    // Join path
-    if (root.empty())
-        return page;
-    if (root[root.size() - 1] == '/' && !page.empty() && page[0] == '/')
-        return root + page.substr(1);
-    if (root[root.size() - 1] != '/' && !page.empty() && page[0] != '/')
-        return root + "/" + page;
-    return root + page;
+    if (loc) {
+        const std::map<int, std::string>& locPages = loc->getErrorPages();
+        std::map<int, std::string>::const_iterator it = locPages.find(code);
+        if (it != locPages.end()) {
+            return it->second;
+        }
+    }
+    return "";
 }
 
 static std::string buildAllowHeader(const std::set<HttpMethod>& allowed)
@@ -68,36 +47,48 @@ static std::string buildAllowHeader(const std::set<HttpMethod>& allowed)
     return allow;
 }
 
-HttpResponse ErrorHandler::build405(const std::set<HttpMethod>& allowed, const RuntimeServer* server)
+HttpResponse ErrorHandler::build405(const std::set<HttpMethod>& allowed, const RuntimeLocation* loc)
 {
-    HttpResponse res = build(405, server);
+    HttpResponse res = build(405, loc);
     res.headers["Allow"] = buildAllowHeader(allowed);
     return res;
 }
 
-HttpResponse ErrorHandler::build(int code, const RuntimeServer* server)
+HttpResponse ErrorHandler::build(int code, const RuntimeLocation* loc)
 {
-    return build(code, getReasonPhrase(code) + "\n", server);
+    return build(code, getReasonPhrase(code) + "\n", loc);
 }
 
-HttpResponse ErrorHandler::build(int code, const std::string& fallbackMsg, const RuntimeServer* server)
+std::string ErrorHandler::readFile(const std::string& path, bool& success)
+{
+    std::ifstream in(path.c_str(), std::ios::in | std::ios::binary);
+    if (!in.is_open()) {
+        success = false;
+        return "";
+    }
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    success = true;
+    return ss.str();
+}
+
+HttpResponse ErrorHandler::build(int code, const std::string& fallbackMsg, const RuntimeLocation* loc)
 {
     HttpResponse res;
     res.status_code = code;
     res.reason_phrase = getReasonPhrase(code);
 
-    std::string pagePath = resolvePathError(code, server);
-    if (!pagePath.empty())
-    {
-        std::string content = readFile(pagePath);
-        if (!content.empty())
-        {
+    std::string pagePath = resolvePathError(code, loc);
+    bool fileOk = false;
+    std::string content;
+    if (!pagePath.empty()) {
+        content = readFile(pagePath, fileOk);
+        if (fileOk) {
             res.body = content;
             res.headers["Content-Type"] = "text/html";
             return res;
         }
     }
-
     // Fallback
     res.body = fallbackMsg;
     res.headers["Content-Type"] = "text/plain";

@@ -11,4 +11,6 @@ class HttpRequest
         std::string version; // Http/1.1
         std::map<std::string, std::string> headers;
         std::string body;
+
+        std::string getHeader(const std::string& key) const;
 };

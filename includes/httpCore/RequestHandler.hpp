@@ -10,7 +10,7 @@ class RuntimeServer; //forward declare because we only use a pointer
 class RequestHandler 
 {
     public: 
-        HttpResponse handle(const HttpRequest& req, const RuntimeServer* server );
+        HttpResponse handle(const HttpRequest& req, const RuntimeLocation* loc );
 };
 
 

@@ -40,7 +40,7 @@ RuntimeConfig ConfigResolver::resolve(const ConfigAST& ast) {
         const std::vector<SocketKey>& listens = server.getListens();
         for(std::vector<SocketKey>::const_iterator sk = listens.begin(); sk != listens.end(); ++sk) {
             runtime.servers[*sk].push_back(server);
-                debugPrintServer(server, *sk);
+                // debugPrintServer(server, *sk);
         }
     }
     return runtime;
@@ -88,7 +88,7 @@ void ConfigResolver::applyServerDirectives(RuntimeServer& server, const std::vec
 
 void ConfigResolver::setDefaults(RuntimeServer& server) {
     if (server.getRoot().empty())
-        server.setRoot("/var/www/html");
+        server.setRoot("./www/html");
     
     if (server.getIndex().empty()) {
         std::vector<std::string> default_index;
@@ -142,7 +142,7 @@ void ConfigResolver::ApplyInheritance(RuntimeLocation& loc, const RuntimeServer&
         if (loc.getIndex().empty())
             loc.setIndex(parent.getIndex());
     }
-    loc.mergeErrorPage(parent.getErrorPages());
+    loc.mergeErrorPage(parent.getErrorPages(), parent.getRoot());
     if (loc.getClientMaxBodySize() == 0)
         loc.setClientMaxBodySizeLoc(parent.getClientMaxBodySize());
 }

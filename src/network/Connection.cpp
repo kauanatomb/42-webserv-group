@@ -1,5 +1,6 @@
 #include "network/Connection.hpp"
-#include "resolver/ServerResolver.hpp"
+#include "resolver/HandlerResolver.hpp"
+#include "httpCore/ErrorHandler.hpp"
 #include <sys/socket.h>
 
 #ifdef DEBUG_LOG
@@ -33,24 +34,6 @@ bool Connection::isClosed() const {
 }
 
 #ifdef TEMP_NO_PARSER
-static std::string extractHostHeader(const std::string& buf)
-{
-    std::string host = "";
-    std::string::size_type pos = buf.find("Host:");
-    if (pos == std::string::npos)
-        return host;
-
-    pos += 5;
-    while (pos < buf.size() && (buf[pos] == ' ' || buf[pos] == '\t'))
-        ++pos;
-
-    std::string::size_type end = buf.find("\r\n", pos);
-    if (end == std::string::npos)
-        return host;
-
-    host = buf.substr(pos, end - pos);
-    return host;
-}
 
 static void fillStubRequestFromStartLine(HttpRequest& req, const std::string& buf)
 {
@@ -109,23 +92,18 @@ void Connection::onReadable() {
     HttpRequest req;
     fillStubRequestFromStartLine(req, _read_buffer);
 
-    std::string host = extractHostHeader(_read_buffer);
-
-    const RuntimeServer* server = ServerResolver::resolve(_config, _socket_key, host);
+    const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, req);
     //handle null server here and remove it from handler
 
-    if (!server)
+    if (!loc)
     {
-        HttpResponse res;
-        res.status_code = 500;
-        res.reason_phrase = "Internal Server Error";
-        res.body = "Resolver returned NULL server \n";
+        HttpResponse res = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
         _write_buffer = res.serialize();
         _state = WRITING;
         return;
     }
     RequestHandler handler;
-    HttpResponse res = handler.handle(req, server);
+    HttpResponse res = handler.handle(req, loc);
 
     _write_buffer = res.serialize();
     _state = WRITING;
@@ -141,9 +119,9 @@ void Connection::onReadable() {
     //         _response = HttpResponse::fromStatus(status);
     //     } else {
     //         _request.print();
-    //         const RuntimeServer* server =
-    //             ServerResolver::resolve(_config, _socket_key, _request.getHeader("Host"));
-    //         if (!server) {
+    //         const RuntimeLocation* loc =
+    //             HandlerResolver::resolve(_config, _socket_key, _request);
+    //         if (!loc) {
     //             _response = HttpResponse::fromStatus(500);
     //         } else {
     //             // RequestHandler handler;

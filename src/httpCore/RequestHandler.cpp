@@ -11,39 +11,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-
-static bool isPrefixMatch(const std::string& uri, const std::string& locPath)
-{
-    if (uri == locPath)
-        return true;
-    if (locPath == "/")
-        return true;
-    if (uri.size() < locPath.size())
-        return false;
-    if (uri.compare(0, locPath.size(), locPath) != 0)
-        return false;
-    return (uri[locPath.size()] == '/');
-}
-
-static const RuntimeLocation* matchLocation (const std::string& uri, const RuntimeServer& server)
-{
-    const std::vector<RuntimeLocation>& locs = server.getLocations();
-    const RuntimeLocation* best = NULL;
-    size_t bestLen = 0;
-
-    for (size_t i = 0; i < locs.size(); i++)
-    {
-        const RuntimeLocation& loc = locs[i];
-        const std::string& p = loc.getPath();
-
-        if (isPrefixMatch(uri, p) && p.size() >= bestLen)
-        {
-            best = &loc;
-            bestLen = p.size();
-        }
-    }
-    return best;
-}
+#include <iostream>
 
 static bool methodFromString (const std::string& s, HttpMethod& out)
 {
@@ -87,13 +55,6 @@ static std::string joinPath(const std::string& a, const std::string& b)
     return a + b;
 }
 
-static std::string pickRoot(const RuntimeServer* server, const RuntimeLocation* loc)
-{
-    if (loc && !loc->getRoot().empty())
-        return loc->getRoot();
-    return server->getRoot();
-}
-
 static std::string stripLocationPrefix(const std::string& uri, const std::string& locPath)
 {
     //uri starts with locPath, matchLocation() guarantee
@@ -108,8 +69,8 @@ static bool hasTrailingSlash(const std::string& s) {
     return (!s.empty() && s[s.size() - 1] == '/');
 }
 
-static std::string resolvePath(const HttpRequest& req, const RuntimeServer* server, const RuntimeLocation* loc) {
-    std::string root = pickRoot(server, loc);
+static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc) {
+    std::string root = loc->getRoot();
     //1- get uri path (basic)
     std::string uri = req.uri;
     std::string::size_type q = uri.find('?');
@@ -130,22 +91,22 @@ static std::string resolvePath(const HttpRequest& req, const RuntimeServer* serv
     return full;
 }
 
-static HttpResponse serveFileGET(const std::string& path, const RuntimeServer* server)
+static HttpResponse serveFileGET(const std::string& path, const RuntimeLocation* loc)
 {
     struct stat st;
     if (stat(path.c_str(), &st) != 0)
-        return ErrorHandler::build(404, server);
+        return ErrorHandler::build(404, loc);
 
     // Implement here autoindex
     if (S_ISDIR(st.st_mode))
-        return ErrorHandler::build(403, "Directory listing denied\n", server);
+        return ErrorHandler::build(403, "Directory listing denied\n", loc);
 
     if (access(path.c_str(), R_OK) != 0)
-        return ErrorHandler::build(403, server);
+        return ErrorHandler::build(403, loc);
 
     std::ifstream in(path.c_str(), std::ios::in | std::ios::binary);
     if (!in.is_open())
-        return ErrorHandler::build(500, server);
+        return ErrorHandler::build(500, loc);
 
     std::ostringstream ss;
     ss << in.rdbuf();
@@ -153,39 +114,33 @@ static HttpResponse serveFileGET(const std::string& path, const RuntimeServer* s
     return ResponseBuilder::ok(ss.str(), path);
 }
 
-HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeServer* server) {
-    //server is non-null in Connection:
-    //1- choose the best location from config
-    const RuntimeLocation* loc = matchLocation(req.uri, *server);
-    if (!loc)
-        return ErrorHandler::build(404, "No matching location\n", server);
-
+HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocation* loc) {
     //redirection handling (return directive)
     //2- redirect check:
     if (loc->getHasReturn()) {
         const ReturnRule& r = loc->getRedirect();
         if (r.target.empty())
-            return ErrorHandler::build(500, server);
+            return ErrorHandler::build(500, loc);
         return ResponseBuilder::redirect(r.status_code, r.target);
     }
     //3- method check 405/501
     int methodErr = checkMethod(req, loc);
     if (methodErr == 501)
-        return ErrorHandler::build(501, server);
+        return ErrorHandler::build(501, loc);
     if (methodErr == 405)
-    return ErrorHandler::build405(loc->getAllowedMethods(), server);
+    return ErrorHandler::build405(loc->getAllowedMethods(), loc);
 
     // 4- resolve filesystem path
     if (req.method == "GET") // I believe Fran will create get functions for request than we can change it
     {
-        std::string path = resolvePath(req, server, loc);
-        return serveFileGET(path, server);
+        std::string path = resolvePath(req, loc);
+        return serveFileGET(path, loc);
     }
     
     // TEMP until post/delete:
 
     if (req.method == "POST" || req.method == "DELETE")
-        return ErrorHandler::build(501, server);
+        return ErrorHandler::build(501, loc);
 
-    return ErrorHandler::build(501, "Fallback\n", server);
+    return ErrorHandler::build(501, "Fallback\n", loc);
 }
