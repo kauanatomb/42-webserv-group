@@ -138,7 +138,7 @@ static HttpResponse serveFileGET(const std::string& path, const RuntimeServer* s
 
     // Implement here autoindex
     if (S_ISDIR(st.st_mode))
-        return ErrorHandler::build(403, "Is a directory\n", server);
+        return ErrorHandler::build(403, "Directory listing denied\n", server);
 
     if (access(path.c_str(), R_OK) != 0)
         return ErrorHandler::build(403, server);
