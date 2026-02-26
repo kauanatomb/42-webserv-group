@@ -15,17 +15,30 @@ void RuntimeLocation::setClientMaxBodySizeLoc(size_t value) {
     client_max_body_size = value;
 }
 
-void RuntimeLocation::addErrorPageLoc(int status, const std::string& path) {
-    error_pages[status] = path;
+static std::string joinPath(const std::string& base, const std::string& path) {
+    if (base.empty())
+        return path;
+    if (path.empty())
+        return base;
+
+    if (base.back() == '/' && path.front() == '/')
+        return base + path.substr(1);
+
+    if (base.back() != '/' && path.front() != '/')
+        return base + "/" + path;
+
+    return base + path;
 }
 
-void RuntimeLocation::mergeErrorPage(const std::map<int, std::string>& parent_error_pages) {
-    // only inherit from parent if not defined in location
-    for (std::map<int, std::string>::const_iterator it = parent_error_pages.begin(); 
-            it != parent_error_pages.end(); ++it) {
-        if (error_pages.find(it->first) == error_pages.end()) {
-            error_pages[it->first] = it->second;
-        }
+void RuntimeLocation::addErrorPageLoc(int status, const std::string& path) {
+    error_pages[status] = joinPath(root, path);
+}
+
+void RuntimeLocation::mergeErrorPage( const std::map<int, std::string>& parent, const std::string& server_root) {
+    for (std::map<int, std::string>::const_iterator it = parent.begin();
+        it != parent.end(); ++it) {
+        if (error_pages.count(it->first) == 0)
+            error_pages[it->first] = joinPath(server_root, it->second);
     }
 }
 
