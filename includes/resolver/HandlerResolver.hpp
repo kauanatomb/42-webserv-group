@@ -1,13 +1,14 @@
 #pragma once
 #include "RuntimeConfig.hpp"
 #include "RuntimeServer.hpp"
+#include "httpCore/HttpRequest.hpp"
 
-class ServerResolver {
+class HandlerResolver {
     public:
-        static const RuntimeServer* resolve(
+        static const RuntimeLocation* resolve(
             const RuntimeConfig& config,
             const SocketKey& socket_key,
-            const std::string& host_header
+            const HttpRequest& req
         );
     
     private:

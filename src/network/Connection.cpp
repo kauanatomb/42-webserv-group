@@ -1,15 +1,15 @@
 #include "network/Connection.hpp"
-#include "resolver/ServerResolver.hpp"
+#include "resolver/HandlerResolver.hpp"
 #include <sys/socket.h>
 #include <iostream>
 
 Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key) 
     : _socket_fd(fd), 
     _socket_key(socket_key),
-    _config(config),
-    _state(READING),
     _read_buffer(),
     _write_buffer(),
+    _config(config),
+    _state(READING),
     _keep_alive(false) {}
 
 
@@ -23,6 +23,8 @@ bool Connection::isClosed() const {
 
 void Connection::onReadable() {
     (void)_keep_alive;
+    (void)_socket_key;
+    (void)_config;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
@@ -38,13 +40,13 @@ void Connection::onReadable() {
     //         _response = HttpResponse::fromStatus(status);
     //     } else {
     //         _request.print();
-    //         const RuntimeServer* server = ServerResolver::resolve(_config, _socket_key, _request.getHeader("Host"));
-    //         if (!server) {
+    //         const RuntimeLocation* loc = ServerResolver::resolve(_config, _socket_key, _request);
+    //         if (!loc) {
     //             _response = HttpResponse::fromStatus(500);
     //         } else {
-                // RequestHandler handler(*server);
+                // RequestHandler handler(*loc);
                 // _response = handler.handle(_request);
-                // (void)server; // TODO: remove when handler is implemented
+                // (void)loc; // TODO: remove when handler is implemented
             // }
         // }
         // _write_buffer = _response.serialize();
