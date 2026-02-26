@@ -65,7 +65,8 @@ static void fillStubRequestFromStartLine(HttpRequest& req, const std::string& bu
 
 void Connection::onReadable() {
     (void)_keep_alive;
-
+    (void)_socket_key;
+    (void)_config;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
@@ -119,13 +120,12 @@ void Connection::onReadable() {
     //         _response = HttpResponse::fromStatus(status);
     //     } else {
     //         _request.print();
-    //         const RuntimeLocation* loc =
-    //             HandlerResolver::resolve(_config, _socket_key, _request);
+    //         const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
     //         if (!loc) {
     //             _response = HttpResponse::fromStatus(500);
     //         } else {
     //             // RequestHandler handler;
-    //             // _response = handler.handle(_request, server);
+    //             // _response = handler.handle(_request, loc);
     //         }
     //     }
     //     _write_buffer = _response.serialize();
