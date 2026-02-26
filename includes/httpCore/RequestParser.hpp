@@ -28,7 +28,7 @@ class RequestParser
         int &getErrorStatus() const;
         
         /*************** Getters and Setters ***************/
-        static setErrorInfo(State state, int error_status, bool has_error);
+        void setErrorInfo(State state, int error_status, bool has_error);
 
 };
 
