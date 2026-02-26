@@ -15,16 +15,36 @@ void RuntimeLocation::setClientMaxBodySizeLoc(size_t value) {
     client_max_body_size = value;
 }
 
-static std::string joinPath(const std::string& base, const std::string& path) {
-    if (base.empty())
-        return path;
-    if (path.empty())
-        return base;
+//does not compile because base.back() and path.front() are c++11 methods
+// static std::string joinPath(const std::string& base, const std::string& path) {
+//     if (base.empty())
+//         return path;
+//     if (path.empty())
+//         return base;
 
-    if (base.back() == '/' && path.front() == '/')
+//     if (base.back() == '/' && path.front() == '/')
+//         return base + path.substr(1);
+
+//     if (base.back() != '/' && path.front() != '/')
+//         return base + "/" + path;
+
+//     return base + path;
+// }
+
+//replacement:
+
+static std::string joinPath(const std::string& base, const std::string& path)
+{
+    if (base.empty()) return path;
+    if (path.empty()) return base;
+
+    char baseLast = base[base.size() - 1];
+    char pathFirst = path[0];
+
+    if (baseLast == '/' && pathFirst == '/')
         return base + path.substr(1);
 
-    if (base.back() != '/' && path.front() != '/')
+    if (baseLast != '/'  && pathFirst != '/')
         return base + "/" + path;
 
     return base + path;

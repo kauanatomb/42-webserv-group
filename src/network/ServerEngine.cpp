@@ -8,6 +8,7 @@
 #include <cstring>
 #include <csignal>
 #include <iostream>
+#include <errno.h> //didn't compile without it
 
 int ServerEngine::_signalPipe[2] = {-1, -1};
 
