@@ -18,7 +18,8 @@ INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/resolver/HandlerResolver.cpp \
 			src/resolver/RuntimeServer.cpp src/resolver/RuntimeLocation.cpp \
 			src/network/Connection.cpp src/network/ServerEngine.cpp \
-			src/httpCore/HttpRequest.cpp
+			src/httpCore/HttpRequest.cpp \
+			src/httpCore/RequestParser.cpp 
 
 OBJ_DIR = obj
 OBJ = $(INFILE:%.cpp=$(OBJ_DIR)/%.o)
