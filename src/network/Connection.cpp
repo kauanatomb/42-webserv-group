@@ -39,7 +39,7 @@ void Connection::onReadable() {
             // int status = _parser.getErrorStatus();
             // _response = HttpResponse::fromStatus(status);
         // } else {
-            _request.print();
+            
         //     const RuntimeLocation* loc = ServerResolver::resolve(_config, _socket_key, _request);
         //     if (!loc) {
         //         _response = HttpResponse::fromStatus(500);
@@ -52,6 +52,7 @@ void Connection::onReadable() {
         //_write_buffer = _response.serialize();
         //_state = WRITING;
     }
+    _request.print();
 }
 
 void Connection::onWritable() {

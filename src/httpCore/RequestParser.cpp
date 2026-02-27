@@ -216,6 +216,7 @@ RequestParser::~RequestParser(void)
 
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
+    std::cout << buffer << std::endl;
     while (true)
     {
         switch (_state)
