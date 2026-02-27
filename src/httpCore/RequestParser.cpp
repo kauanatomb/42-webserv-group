@@ -7,31 +7,6 @@ RequestParser::RequestParser(void): _state(START_LINE), _error_status(0), _has_e
 RequestParser::~RequestParser(void)
 {}
 
-/************ Methods ************/
-
-//bool RequestParser::parse(std::string& buffer, HttpRequest& request)
-//{
-//    /* verify if there is content to parse section - not necessary for the moment*/
-//    if (_state == START_LINE)
-//        if (!parseStartLine(buffer, request)) // parseStartLine givrs false for incomplete lines: without CRFL
-//            return (false);
-//    _state = HEADERS;
-//    if (_state == HEADERS)
-//        if (!parseHeaders)
-//            return (false)
-//    if (_state == BODY)
-//        if (!parseBody(buffer, request))
-//    if (_state == CHUNK_SIZE)
-//        parseChunkSize();
-//    if (state == CHUNK_DATA)
-//        parseChunkData();
-//    if (state == CHUNK_CRLF)
-//        parseChunkCRLF();
-//    if (_state == COMPLETE)
-//        return (true);
-//    //how do you know when body is finished
-//}
-
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
     while (true)
@@ -171,18 +146,6 @@ static bool checkVersion(std::string version)
     return (version = "HTTP/1.1" || version = "HTTP/1.0");
 }
 
-/*
-1. check if Startline is complete by findign crlf, if not return false D
-2. duplicate line and remove from buffer D 
-3. store componenets in httprequest class 
-4.1 check for components of line : Method(GET/POST/DELETE)
-    a. if not correct : change error status and put error code
-4.2 check for components of line : Request-URI(bla/bla)
-    a. if not correct : change error status and put error code
-4.3 check for components of line : http VERSION(http1.1 / http1.0)
-    a. if not correct : change error status and put error code
-*/
-
 /* Method SP Request-URI SP HTTP-Version CRLF */
 static bool parseStartLine(std::string& buffer, HttpRequest& request)
 {
@@ -200,15 +163,6 @@ static bool parseStartLine(std::string& buffer, HttpRequest& request)
     return (true);
 }
 
-/*
-0. loop to be able to process multiple headers D
-1. check for CRLF, if not return false D
-2. store beggining of line and erase from buffer D
-3. check if the buffer read is only compose of crlf, if yes remove crlf from buffer, and  change to body and break D
-4. check for colon inside line(only grammar rule, verify this later), if not throw error
-5. store components in httpRequest class
-0. outside loop: check for mandatory header
-*/
 
 /* Header-Field   = Field-Name ":" [Field-Value] CRLF */
 static bool parseHeader(std::string& buffer, HttpRequest& request)
@@ -277,20 +231,6 @@ static bool parseBody(std::string& buffer, HttpRequest& request)
         return (_state = COMPLETE, true);
 }
 
-
-/*
-Chunked-Body =
-    (size in hex)
-    \r\n
-    (exactly that many bytes)
-    \r\n
-    repeat...
-    until size == 0
-    then:
-        0\r\n
-        \r\n
-*/
-
 static bool hexToNum(const std::string& hex, unsigned long& result)
 {
     if (hex.empty())
@@ -307,26 +247,6 @@ static bool hexToNum(const std::string& hex, unsigned long& result)
     return true;
 }
 
-/*
-    if State == CHUNK_SIZE:
-        if no complete line in buffer:
-            return false
-
-        read line until CRLF
-        parse hex number → chunk_size
-
-        if invalid hex:
-            set ERROR
-            return false
-
-        remove line + CRLF from buffer
-
-        if chunk_size == 0:
-            State = FINAL_CRLF
-        else:
-            State = CHUNK_DATA
-*/
-
 static bool parseChunkSize(std::string& buffer, HttpRequest& request)
 {
     if (!checkCompleteLine(buffer))
@@ -341,19 +261,6 @@ static bool parseChunkSize(std::string& buffer, HttpRequest& request)
         state = CHUNK_DATA;
 }
 
-
-/*
-    if State == CHUNK_DATA:
-        if buffer.size < chunk_size:
-            return false
-
-        read exactly chunk_size bytes
-        append to request.body
-        remove them from buffer
-
-        State = CHUNK_CRLF
-*/
-
 static bool parseChunkData(std::string& buffer, HttpRequest& request, unsigned long chunkSize)
 {
     if (!checkCompleteLine(buffer))
@@ -366,20 +273,6 @@ static bool parseChunkData(std::string& buffer, HttpRequest& request, unsigned l
     return true;
 }
 
-/*
-    if State == FINAL_CRLF:
-        if buffer.size < 2:
-            return false
-
-        if next two bytes != "\r\n":
-            set ERROR
-            return false
-
-        remove "\r\n"
-        State = COMPLETE
-        return true
-*/
-
 static bool parseChunkFinalCRLF(std::string& buffer, HttpRequest& request)
 {
     if (!checkCompleteLine(buffer))
@@ -390,20 +283,6 @@ static bool parseChunkFinalCRLF(std::string& buffer, HttpRequest& request)
     _state = COMPLETE;
     return true 
 }
-    /*
-
-    if State == CHUNK_CRLF: //Not implementing for the moment
-        if buffer.size < 2:
-            return false
-
-        if next two bytes != "\r\n":
-            set ERROR
-            return false
-
-        remove "\r\n"
-        State = CHUNK_SIZE
-    */
-
 
 /*************** Getters and setters ***************/
 void RequestParser::setErrorInfo(State state, int error_status, bool has_error)
