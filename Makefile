@@ -3,21 +3,23 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: ktombola <ktombola@student.42.fr>          +#+  +:+       +#+         #
+#    By: falatrac <falatrac@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/10 10:18:02 by ktombola          #+#    #+#              #
-#    Updated: 2025/11/10 10:18:06 by ktombola         ###   ########.fr        #
+#    Updated: 2026/02/23 14:03:59 by falatrac         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CXX = c++
-CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
+CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes -DTEMP_NO_PARSER
 INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/config/ConfigParser.cpp src/config/ConfigValidator.cpp \
 			src/resolver/ConfigResolver.cpp src/resolver/SocketKeyUtils.cpp \
 			src/resolver/HandlerResolver.cpp \
 			src/resolver/RuntimeServer.cpp src/resolver/RuntimeLocation.cpp \
 			src/network/Connection.cpp src/network/ServerEngine.cpp \
+			src/httpCore/RequestHandler.cpp src/httpCore/HttpResponse.cpp \
+			src/httpCore/ErrorHandler.cpp src/httpCore/ResponseBuilder.cpp \
 			src/httpCore/HttpRequest.cpp
 
 OBJ_DIR = obj
