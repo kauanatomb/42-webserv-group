@@ -2,6 +2,10 @@
 #include <sstream>
 #include <stdlib.h> 
 
+
+#define RESET   "\033[0m"
+#define PINK    "\033[35m"
+
 /************ Helper Functions ************/
 ///Utils
 static bool checkCompleteLine(std::string& buffer)
@@ -81,11 +85,11 @@ static bool checkVersion(std::string version)
 /* Method SP Request-URI SP HTTP-Version CRLF */
 bool RequestParser::parseStartLine(std::string& buffer, HttpRequest& request)
 {
-    if (!checkCompleteLine(buffer)) //1
+    if (!checkCompleteLine(buffer))
         return (false);
-    std::string bufferSection = copyAndCleanBuffer(buffer); //2
+    std::string bufferSection = copyAndCleanBuffer(buffer); 
     std::istringstream iss(bufferSection);
-    iss >> request.method >> request.uri >> request.version; //3
+    iss >> request.method >> request.uri >> request.version; 
     if (!checkMethod(request.method))
         return (setErrorInfo(ERROR, 405, true), true); 
     if (!checkURI(request.uri ))
@@ -113,7 +117,7 @@ bool RequestParser::parseHeader(std::string& buffer, HttpRequest& request)
         if (posColon== std::string::npos) //check : 
             return (setErrorInfo(ERROR, 400, true), true); //error unformatted header
         std::string headerName = bufferSection.substr(0, posColon); //string substr (size_t pos = 0, size_t len = npos) const;
-        std::string headerValue = bufferSection.substr(posColon, bufferSection.size());
+        std::string headerValue = bufferSection.substr(posColon + 1, bufferSection.size() - posColon - 1);
         request.headers[headerName] = headerValue;
     }
     if (request.headers.find("Host") == request.headers.end())
@@ -146,7 +150,6 @@ bool RequestParser::parseBody(std::string& buffer, HttpRequest& request)
             buffer.erase(0, contentLen);
             request.body.append(body);
             _state = COMPLETE;
-            std::cout << "llegue3" << std::endl;
             return (true);
         }
     }
@@ -172,11 +175,10 @@ static bool hexToNum(const std::string& hex, long& result)
 
 bool RequestParser::parseChunkSize(std::string& buffer)
 {
+ 
     if (!checkCompleteLine(buffer))
         return (false);
     std::string sectionBuffer = copyAndCleanBuffer(buffer);
-    
-    std::string hex_part;
     /* for chunking encoding
     for (size_t i = 0; i < sectionBuffer.size(); i++)
     {
@@ -188,12 +190,13 @@ bool RequestParser::parseChunkSize(std::string& buffer)
         hex_part += c;
     }
     */
-    if (!hexToNum(hex_part, _chunk_size))
+    if (!hexToNum(sectionBuffer, _chunk_size))
         return (setErrorInfo(ERROR, 400, true), true);
     if (_chunk_size == 0)
         _state = FINAL_CRLF;
     else
         _state = CHUNK_DATA;
+   
     return (true);
 }
 
@@ -251,7 +254,6 @@ bool RequestParser::parse(std::string& buffer, HttpRequest& request)
             case BODY:
                 if (!parseBody(buffer, request))
                     return false;
-                std::cout << "pasoParseBody" << std::endl;
                 break;
 
             case CHUNK_SIZE:
