@@ -104,15 +104,15 @@ bool RequestParser::parseHeader(std::string& buffer, HttpRequest& request)
         if (!checkCompleteLine(buffer)) //1
             return (false);
         std::string bufferSection = copyAndCleanBuffer(buffer);
-        if (bufferSection == "")
+        if (bufferSection == "") // for empty CRLF
         {
             _state = BODY;
             break;
         }
-        size_t posColon = buffer.find(":");
+        size_t posColon = bufferSection.find(":");
         if (posColon== std::string::npos) //check : 
             return (setErrorInfo(ERROR, 400, true), true); //error unformatted header
-        std::string headerName = bufferSection.substr(0, posColon);
+        std::string headerName = bufferSection.substr(0, posColon); //string substr (size_t pos = 0, size_t len = npos) const;
         std::string headerValue = bufferSection.substr(posColon, bufferSection.size());
         request.headers[headerName] = headerValue;
     }
@@ -123,27 +123,30 @@ bool RequestParser::parseHeader(std::string& buffer, HttpRequest& request)
 
 bool RequestParser::parseBody(std::string& buffer, HttpRequest& request)
 {
-    if (request.headers.find("transfers_encoding") != request.headers.end())
+    
+    if (request.headers.find("Transfer-Encoding") != request.headers.end())
     {
-        if (request.headers.find("content_length") == request.headers.end())    
+        if (request.headers.find("Content-Length") == request.headers.end())    
             return (_state = CHUNK_SIZE, true);
         else
             return (setErrorInfo(ERROR, 400, true), true); //invalid header combination
     }
-    else if (request.headers.find("content_length") != request.headers.end())
+    
+    else if (request.headers.find("Content-Length") != request.headers.end())
     {
         
-        if (request.headers.find("transfers_encoding") != request.headers.end())
+        if (request.headers.find("Transfer-Encoding") != request.headers.end())
             return (setErrorInfo(ERROR, 400, true), true);  //invalid header combination
         else
         {
-            size_t contentLen = atoi(request.headers["content_length"].c_str());
+            size_t contentLen = atoi(request.headers["Content-Length"].c_str());
             if (buffer.size() < contentLen )
                 return (false); //not enough data
             std::string body = buffer.substr(0, contentLen);
             buffer.erase(0, contentLen);
             request.body.append(body);
             _state = COMPLETE;
+            std::cout << "llegue3" << std::endl;
             return (true);
         }
     }
@@ -160,7 +163,7 @@ static bool hexToNum(const std::string& hex, long& result)
     result = std::strtoul(hex.c_str(), &endptr, 16);
     if (endptr == hex.c_str()) // No digits parsed
         return false;
-    if (*endptr != '\0') // Extra invalid characters
+    if (*endptr != '\0') // Only permits to parse "4","2A" not "4;foo=bar"
         return false;
     if (errno == ERANGE) // Overflow
         return false;
@@ -172,7 +175,20 @@ bool RequestParser::parseChunkSize(std::string& buffer)
     if (!checkCompleteLine(buffer))
         return (false);
     std::string sectionBuffer = copyAndCleanBuffer(buffer);
-    if (!hexToNum(sectionBuffer, _chunk_size))
+    
+    std::string hex_part;
+    /* for chunking encoding
+    for (size_t i = 0; i < sectionBuffer.size(); i++)
+    {
+        char c = sectionBuffer[i];
+        if (c == ';')
+            break;
+        if (c == ' ' || c == '\t')
+            continue;
+        hex_part += c;
+    }
+    */
+    if (!hexToNum(hex_part, _chunk_size))
         return (setErrorInfo(ERROR, 400, true), true);
     if (_chunk_size == 0)
         _state = FINAL_CRLF;
@@ -199,7 +215,7 @@ bool RequestParser::parseChunkFinalCRLF(std::string& buffer)
     if (!checkCompleteLine(buffer))
         return (false);
     std::string sectionBuffer = copyAndCleanBuffer(buffer);
-    if (sectionBuffer != "\r\n")
+    if (!sectionBuffer.empty())
         return (setErrorInfo(ERROR, 400, true), true); //bad chunk ending
     _state = COMPLETE;
     return true ;
@@ -235,6 +251,7 @@ bool RequestParser::parse(std::string& buffer, HttpRequest& request)
             case BODY:
                 if (!parseBody(buffer, request))
                     return false;
+                std::cout << "pasoParseBody" << std::endl;
                 break;
 
             case CHUNK_SIZE:
@@ -256,7 +273,7 @@ bool RequestParser::parse(std::string& buffer, HttpRequest& request)
                 return true;
 
             case ERROR:
-                return false;
+                return true;
         }
     }
 }
