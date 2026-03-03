@@ -2,7 +2,6 @@
 #include "resolver/HandlerResolver.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include <sys/socket.h>
-# include "httpCore/HttpResponse.hpp"
 # include "httpCore/RequestHandler.hpp"
 # include <string>
 

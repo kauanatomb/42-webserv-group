@@ -2,6 +2,7 @@
 
 #include "../resolver/RuntimeConfig.hpp"
 #include "../httpCore/RequestParser.hpp"
+#include "../httpCore/HttpResponse.hpp"
 // #include "../http/HttpResponse.hpp"
 
 class Connection {
@@ -22,7 +23,7 @@ class Connection {
 
         RequestParser _parser;
         HttpRequest _request;
-        // HttpResponse _response;
+        HttpResponse _response;
 
         const RuntimeConfig& _config;
 
