@@ -13,4 +13,5 @@ class HttpRequest
         std::string body;
 
         std::string getHeader(const std::string& key) const;
+        void print() const;
 };

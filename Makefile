@@ -11,8 +11,8 @@
 # **************************************************************************** #
 
 CXX = c++
-CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes -DTEMP_NO_PARSER
-INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
+CXX_FLAGS = -Wall -Wextra -Werror -std=c++98 -I includes
+INFILE = 	src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/config/ConfigParser.cpp src/config/ConfigValidator.cpp \
 			src/resolver/ConfigResolver.cpp src/resolver/SocketKeyUtils.cpp \
 			src/resolver/HandlerResolver.cpp \
@@ -20,7 +20,7 @@ INFILE = src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/network/Connection.cpp src/network/ServerEngine.cpp \
 			src/httpCore/RequestHandler.cpp src/httpCore/HttpResponse.cpp \
 			src/httpCore/ErrorHandler.cpp src/httpCore/ResponseBuilder.cpp \
-			src/httpCore/HttpRequest.cpp
+			src/httpCore/HttpRequest.cpp src/httpCore/RequestParser.cpp 
 
 OBJ_DIR = obj
 OBJ = $(INFILE:%.cpp=$(OBJ_DIR)/%.o)

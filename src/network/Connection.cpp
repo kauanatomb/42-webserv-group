@@ -2,19 +2,9 @@
 #include "resolver/HandlerResolver.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include <sys/socket.h>
-
-#ifdef DEBUG_LOG
-# include "resolver/SocketKeyUtils.hpp"
-# include <iostream>
-#endif
-
-// TEMP only allow calling handler without final parser
-#ifdef TEMP_NO_PARSER
-# include "httpCore/HttpRequest.hpp"
 # include "httpCore/HttpResponse.hpp"
 # include "httpCore/RequestHandler.hpp"
 # include <string>
-#endif
 
 Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key)
     : _socket_fd(fd),
@@ -33,36 +23,6 @@ bool Connection::isClosed() const {
     return _state == CLOSED;
 }
 
-#ifdef TEMP_NO_PARSER
-
-static void fillStubRequestFromStartLine(HttpRequest& req, const std::string& buf)
-{
-    // Defaults
-    req.method = "GET";
-    req.uri = "/";
-    req.version = "HTTP/1.1";
-
-    // Parse "METHOD SP URI SP VERSION\r\n"
-    std::string::size_type lineEnd = buf.find("\r\n");
-    if (lineEnd == std::string::npos)
-        return;
-
-    std::string startLine = buf.substr(0, lineEnd);
-
-    std::string::size_type sp1 = startLine.find(' ');
-    if (sp1 == std::string::npos)
-        return;
-
-    std::string::size_type sp2 = startLine.find(' ', sp1 + 1);
-    if (sp2 == std::string::npos)
-        return;
-
-    req.method = startLine.substr(0, sp1);
-    req.uri = startLine.substr(sp1 + 1, sp2 - (sp1 + 1));
-    req.version = startLine.substr(sp2 + 1);
-}
-#endif
-
 void Connection::onReadable() {
     (void)_keep_alive;
     (void)_socket_key;
@@ -76,61 +36,25 @@ void Connection::onReadable() {
     }
 
     _read_buffer.append(buffer, bytes);
-
-#ifdef STUB_RESPONSE
-    _write_buffer =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Length: 2\r\n"
-        "Connection: close\r\n"
-        "\r\n"
-        "OK";
-    _state = WRITING;
-    return;
-#endif
-
-#ifdef TEMP_NO_PARSER
-    // TEMP: bypass full parser to unblock Handler + location matching
-    HttpRequest req;
-    fillStubRequestFromStartLine(req, _read_buffer);
-
-    const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, req);
-    //handle null server here and remove it from handler
-
-    if (!loc)
-    {
-        HttpResponse res = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
-        _write_buffer = res.serialize();
-        _state = WRITING;
-        return;
-    }
-    RequestHandler handler;
-    HttpResponse res = handler.handle(req, loc);
-
-    _write_buffer = res.serialize();
-    _state = WRITING;
-    return;
-#endif
-
     _state = PARSING;
-
-    // Uncomment when Fran parser is merged:
-    // if (_parser.parse(_read_buffer, _request)) {
-    //     if (_parser.getHasError()) {
-    //         int status = _parser.getErrorStatus();
-    //         _response = HttpResponse::fromStatus(status);
-    //     } else {
-    //         _request.print();
-    //         const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
-    //         if (!loc) {
-    //             _response = HttpResponse::fromStatus(500);
-    //         } else {
-    //             // RequestHandler handler;
-    //             // _response = handler.handle(_request, loc);
-    //         }
-    //     }
-    //     _write_buffer = _response.serialize();
-    //     _state = WRITING;
-    // }
+    if (_parser.parse(_read_buffer, _request)) {
+        if (_parser.hasError()) {
+            int status = _parser.getErrorStatus();
+            (void)status; // TODO remove when HttpResponse::fromStatus(status) will be ready
+            // _response = HttpResponse::fromStatus(status);
+        } else {
+            _request.print();
+            const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
+            if (!loc)
+                _response = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
+            else {
+                RequestHandler handler;
+                _response = handler.handle(_request, loc);
+            }
+        }
+    }
+    _write_buffer = _response.serialize();
+    _state = WRITING;
 }
 
 void Connection::onWritable() {
