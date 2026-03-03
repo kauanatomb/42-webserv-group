@@ -1,10 +1,8 @@
 #include "./httpCore/RequestParser.hpp"
 #include <sstream>
-#include <stdlib.h> 
+#include <stdlib.h>
+#include <cerrno>
 
-
-#define RESET   "\033[0m"
-#define PINK    "\033[35m"
 
 /************ Helper Functions ************/
 ///Utils
@@ -23,6 +21,15 @@ static std::string copyAndCleanBuffer(std::string& buffer)
     return (line);
 }
 
+static std::string trimOWS(const std::string& str)
+{
+    size_t start = str.find_first_not_of(" \t");
+    if (start == std::string::npos)
+        return "";
+    size_t end = str.find_last_not_of(" \t");
+    return str.substr(start, end - start + 1);
+}
+
 ///StartLine
 static bool checkMethod(std::string method)
 {
@@ -37,7 +44,7 @@ static bool isHex(char c)
 static bool isUnreserved(char c)
 {
     return std::isalnum(static_cast<unsigned char>(c)) ||
-           c == '-' || c == '.' || c == '_' || c == '~';
+            c == '-' || c == '.' || c == '_' || c == '~';
 }
 
 static bool isReserved(char c)
@@ -116,9 +123,9 @@ bool RequestParser::parseHeader(std::string& buffer, HttpRequest& request)
         size_t posColon = bufferSection.find(":");
         if (posColon== std::string::npos) //check : 
             return (setErrorInfo(ERROR, 400, true), true); //error unformatted header
-        std::string headerName = bufferSection.substr(0, posColon); //string substr (size_t pos = 0, size_t len = npos) const;
-        std::string headerValue = bufferSection.substr(posColon + 1, bufferSection.size() - posColon - 1);
-        request.headers[headerName] = headerValue;
+        std::string headerName = bufferSection.substr(0, posColon);
+        std::string headerValue = bufferSection.substr(posColon + 1);
+        request.headers[trimOWS(headerName)] = trimOWS(headerValue);
     }
     if (request.headers.find("Host") == request.headers.end())
         setErrorInfo(ERROR, 400, true); //Error: missing mandatory header
@@ -127,87 +134,71 @@ bool RequestParser::parseHeader(std::string& buffer, HttpRequest& request)
 
 bool RequestParser::parseBody(std::string& buffer, HttpRequest& request)
 {
-    
-    if (request.headers.find("Transfer-Encoding") != request.headers.end())
-    {
-        if (request.headers.find("Content-Length") == request.headers.end())    
-            return (_state = CHUNK_SIZE, true);
-        else
-            return (setErrorInfo(ERROR, 400, true), true); //invalid header combination
-    }
-    
-    else if (request.headers.find("Content-Length") != request.headers.end())
-    {
-        
-        if (request.headers.find("Transfer-Encoding") != request.headers.end())
-            return (setErrorInfo(ERROR, 400, true), true);  //invalid header combination
-        else
-        {
-            size_t contentLen = atoi(request.headers["Content-Length"].c_str());
-            if (buffer.size() < contentLen )
-                return (false); //not enough data
-            std::string body = buffer.substr(0, contentLen);
-            buffer.erase(0, contentLen);
-            request.body.append(body);
-            _state = COMPLETE;
-            return (true);
-        }
-    }
-    else 
-        return (_state = COMPLETE, true);
-}
+    bool hasTE = request.headers.find("Transfer-Encoding") != request.headers.end();
+    bool hasCL = request.headers.find("Content-Length") != request.headers.end();
 
-static bool hexToNum(const std::string& hex, long& result)
-{
-    if (hex.empty())
-        return false;
-    char* endptr = NULL;
-    errno = 0;
-    result = std::strtoul(hex.c_str(), &endptr, 16);
-    if (endptr == hex.c_str()) // No digits parsed
-        return false;
-    if (*endptr != '\0') // Only permits to parse "4","2A" not "4;foo=bar"
-        return false;
-    if (errno == ERANGE) // Overflow
-        return false;
-    return true;
+    if (hasTE && hasCL)
+        return (setErrorInfo(ERROR, 400, true), true); //invalid header combination
+
+    if (hasTE)
+    {
+        if (request.headers["Transfer-Encoding"] != "chunked")
+            return (setErrorInfo(ERROR, 501, true), true); //only chunked is supported
+        return (_state = CHUNK_SIZE, true);
+    }
+
+    if (hasCL)
+    {
+        const std::string& clValue = request.headers["Content-Length"];
+        char* endptr = NULL;
+        errno = 0;
+        unsigned long contentLen = std::strtoul(clValue.c_str(), &endptr, 10);
+        if (endptr == clValue.c_str() || *endptr != '\0' || errno == ERANGE)
+            return (setErrorInfo(ERROR, 400, true), true); //invalid Content-Length
+        if (buffer.size() < contentLen)
+            return (false); //not enough data
+        request.body.append(buffer, 0, contentLen);
+        buffer.erase(0, contentLen);
+        _state = COMPLETE;
+        return (true);
+    }
+
+    _state = COMPLETE;
+    return (true);
 }
 
 bool RequestParser::parseChunkSize(std::string& buffer)
 {
- 
     if (!checkCompleteLine(buffer))
-        return (false);
-    std::string sectionBuffer = copyAndCleanBuffer(buffer);
-    /* for chunking encoding
-    for (size_t i = 0; i < sectionBuffer.size(); i++)
-    {
-        char c = sectionBuffer[i];
-        if (c == ';')
-            break;
-        if (c == ' ' || c == '\t')
-            continue;
-        hex_part += c;
-    }
-    */
-    if (!hexToNum(sectionBuffer, _chunk_size))
+        return false;
+    std::string line = copyAndCleanBuffer(buffer);
+    // Extract hex part before ';'
+    size_t semi = line.find(';');
+    std::string hexPart = (semi == std::string::npos)
+        ? line
+        : line.substr(0, semi);
+    hexPart = trimOWS(hexPart);
+    if (hexPart.empty())
         return (setErrorInfo(ERROR, 400, true), true);
-    if (_chunk_size == 0)
-        _state = FINAL_CRLF;
-    else
-        _state = CHUNK_DATA;
-   
-    return (true);
+    char* endptr = NULL;
+    errno = 0;
+    unsigned long size = std::strtoul(hexPart.c_str(), &endptr, 16);
+    if (*endptr != '\0' || errno == ERANGE)
+        return (setErrorInfo(ERROR, 400, true), true);
+    _chunk_size = size;
+    _state = (_chunk_size == 0) ? FINAL_CRLF : CHUNK_DATA;
+    return true;
 }
 
 bool RequestParser::parseChunkData(std::string& buffer, HttpRequest& request)
 {
-    if (!checkCompleteLine(buffer))
+    // Need exactly _chunk_size bytes + trailing CRLF
+    if (static_cast<long>(buffer.size()) < _chunk_size + 2)
         return (false);
-    std::string sectionBuffer = copyAndCleanBuffer(buffer);
-    if ( _chunk_size != static_cast<long>(sectionBuffer.size()))
-        return (setErrorInfo(ERROR, 400, true), true); //bad chunk data
-    request.body.append(sectionBuffer);
+    if (buffer[_chunk_size] != '\r' || buffer[_chunk_size + 1] != '\n')
+        return (setErrorInfo(ERROR, 400, true), true); //bad chunk data: missing trailing CRLF
+    request.body.append(buffer, 0, _chunk_size);
+    buffer.erase(0, _chunk_size + 2);
     _state = CHUNK_SIZE;
     _chunk_size = -1;
     return true;
@@ -224,8 +215,6 @@ bool RequestParser::parseChunkFinalCRLF(std::string& buffer)
     return true ;
 }
 
-
-
 /************ Constructor and Destructor*************/ 
 RequestParser::RequestParser(void): _state(START_LINE), _error_status(0), _chunk_size(-1), _has_error(false)
 {}
@@ -235,7 +224,6 @@ RequestParser::~RequestParser(void)
 
 bool RequestParser::parse(std::string& buffer, HttpRequest& request)
 {
-    std::cout << buffer << std::endl;
     while (true)
     {
         switch (_state)
@@ -280,7 +268,6 @@ bool RequestParser::parse(std::string& buffer, HttpRequest& request)
     }
 }
 
-
 bool RequestParser::isComplete() 
 {
     if (_state == COMPLETE)
@@ -292,6 +279,7 @@ bool RequestParser::hasError()
 {
     return (_has_error);
 }
+
 int &RequestParser::getErrorStatus() 
 {
     return (_error_status);

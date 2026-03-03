@@ -35,11 +35,12 @@ void Connection::onReadable() {
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
     if (_parser.parse(_read_buffer, _request)) {
-        // if (_parser.getHasError()) {
-            // int status = _parser.getErrorStatus();
+        if (_parser.hasError()) {
+            int status = _parser.getErrorStatus();
+            (void)status; // TODO remove when HttpResponse::fromStatus(status) will be ready
             // _response = HttpResponse::fromStatus(status);
-        // } else {
-            
+        } else {
+                _request.print();
         //     const RuntimeLocation* loc = ServerResolver::resolve(_config, _socket_key, _request);
         //     if (!loc) {
         //         _response = HttpResponse::fromStatus(500);
@@ -48,11 +49,10 @@ void Connection::onReadable() {
         //         _response = handler.handle(_request);
         //         (void)loc; // TODO: remove when handler is implemented
         //     }
-        // }
+        }
         //_write_buffer = _response.serialize();
         //_state = WRITING;
     }
-    _request.print();
 }
 
 void Connection::onWritable() {

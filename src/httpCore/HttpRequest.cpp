@@ -10,8 +10,8 @@ std::string HttpRequest::getHeader(const std::string& key) const {
 
 void HttpRequest::print() const {
     std::cout << "========== HTTP REQUEST ==========" << std::endl;
-    std::cout << "Method:  " << method << std::endl;
-    std::cout << "URI:     " << uri << std::endl;
+    std::cout << "Method: " << method << std::endl;
+    std::cout << "URI: " << uri << std::endl;
     std::cout << "Version: " << version << std::endl;
     std::cout << "---------- Headers ----------" << std::endl;
     for (std::map<std::string, std::string>::const_iterator it = headers.begin();

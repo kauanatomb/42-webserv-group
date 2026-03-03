@@ -15,29 +15,25 @@ class RequestParser
     public:
         /*************** Class defaults ***************/
         RequestParser(void);
-        //RequestParser(const RequestParser& other);
-        //RequestParser &operator=(const RequestParser &other);
         ~RequestParser();
         /*************** Methods ***************/
         /** 
             @brief Return false if incomplete, true if complete or error 
         */
         bool parse(std::string& buffer, HttpRequest& request);
+        bool isComplete();
+        bool hasError();
+        int &getErrorStatus();
 
+    private:
+        void setErrorInfo(State state, int error_status, bool has_error);
         bool parseStartLine(std::string& buffer, HttpRequest& request);
-
         bool parseHeader(std::string& buffer, HttpRequest& request);
         bool parseBody(std::string& buffer, HttpRequest& request);
         bool parseChunkSize(std::string& buffer);
         bool parseChunkData(std::string& buffer, HttpRequest& request);
         bool parseChunkFinalCRLF(std::string& buffer);
 
-        bool isComplete();
-        bool hasError();
-        int &getErrorStatus();
-        
-        /*************** Getters and Setters ***************/
-        void setErrorInfo(State state, int error_status, bool has_error);
 
 };
 
