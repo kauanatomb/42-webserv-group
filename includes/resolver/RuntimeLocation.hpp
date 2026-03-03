@@ -27,7 +27,7 @@ class RuntimeLocation {
         void setIndex(const std::vector<std::string>& values);
         void setClientMaxBodySizeLoc(size_t value);
         void addErrorPageLoc(int status, const std::string& path);
-        void mergeErrorPage(const std::map<int, std::string>& parent_error_pages);
+        void mergeErrorPage(const std::map<int, std::string>& parent_error_pages, const std::string& server_root);
         void setUploadStore(const std::string& value);
         void setCGI(const std::vector<std::string>& args);
         
