@@ -1,17 +1,19 @@
 #include "network/Connection.hpp"
 #include "resolver/HandlerResolver.hpp"
+#include "httpCore/ErrorHandler.hpp"
 #include <sys/socket.h>
-#include <iostream>
+# include "httpCore/HttpResponse.hpp"
+# include "httpCore/RequestHandler.hpp"
+# include <string>
 
-Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key) 
-    : _socket_fd(fd), 
-    _socket_key(socket_key),
-    _read_buffer(),
-    _write_buffer(),
-    _config(config),
-    _state(READING),
-    _keep_alive(false) {}
-
+Connection::Connection(int fd, const RuntimeConfig& config, const SocketKey& socket_key)
+    : _socket_fd(fd),
+      _socket_key(socket_key),
+      _read_buffer(),
+      _write_buffer(),
+      _config(config),
+      _state(READING),
+      _keep_alive(false) {}
 
 bool Connection::wantsWrite() const {
     return _state == WRITING;
@@ -32,6 +34,7 @@ void Connection::onReadable() {
         _state = CLOSED;
         return;
     }
+
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
     if (_parser.parse(_read_buffer, _request)) {
@@ -40,19 +43,18 @@ void Connection::onReadable() {
             (void)status; // TODO remove when HttpResponse::fromStatus(status) will be ready
             // _response = HttpResponse::fromStatus(status);
         } else {
-                _request.print();
-        //     const RuntimeLocation* loc = ServerResolver::resolve(_config, _socket_key, _request);
-        //     if (!loc) {
-        //         _response = HttpResponse::fromStatus(500);
-        //     } else {
-        //         RequestHandler handler(*loc);
-        //         _response = handler.handle(_request);
-        //         (void)loc; // TODO: remove when handler is implemented
-        //     }
+            _request.print();
+            const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
+            if (!loc)
+                _response = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
+            else {
+                RequestHandler handler;
+                _response = handler.handle(_request, loc);
+            }
         }
-        //_write_buffer = _response.serialize();
-        //_state = WRITING;
     }
+    _write_buffer = _response.serialize();
+    _state = WRITING;
 }
 
 void Connection::onWritable() {
@@ -61,12 +63,12 @@ void Connection::onWritable() {
         _state = CLOSED;
         return;
     }
+
     _write_buffer.erase(0, bytes);
+
     if (_write_buffer.empty()) {
-        // if (_keep_alive) {
-        //     resetForNextRequest();
-        // } else {
-            _state = CLOSED;
-        // }
+        // if (_keep_alive) resetForNextRequest();
+        // else
+        _state = CLOSED;
     }
 }
