@@ -96,13 +96,20 @@ bool RequestParser::parseStartLine(std::string& buffer, HttpRequest& request)
         return (false);
     std::string bufferSection = copyAndCleanBuffer(buffer); 
     std::istringstream iss(bufferSection);
-    iss >> request.method >> request.uri >> request.version; 
+    iss >> request.method >> request.uri >> request.version;
     if (!checkMethod(request.method))
         return (setErrorInfo(ERROR, 405, true), true); 
-    if (!checkURI(request.uri ))
+    if (!checkURI(request.uri))
         return (setErrorInfo(ERROR, 400, true), true);
     if (!checkVersion(request.version))
         return (setErrorInfo(ERROR, 505, true), true);
+    size_t qpos = request.uri.find('?');
+    if (qpos != std::string::npos) {
+        request.path  = request.uri.substr(0, qpos);
+        request.query = request.uri.substr(qpos + 1);
+    } else {
+        request.path = request.uri;
+    }
     return (true);
 }
 
