@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../resolver/RuntimeConfig.hpp"
-// #include "../http/RequestParser.hpp"
+#include "../httpCore/RequestParser.hpp"
+#include "../httpCore/HttpResponse.hpp"
 // #include "../http/HttpResponse.hpp"
 
 class Connection {
@@ -20,9 +21,9 @@ class Connection {
         std::string _read_buffer;
         std::string _write_buffer;
 
-        // RequestParser _parser;
-        // HttpRequest _request;
-        // HttpResponse _response;
+        RequestParser _parser;
+        HttpRequest _request;
+        HttpResponse _response;
 
         const RuntimeConfig& _config;
 
