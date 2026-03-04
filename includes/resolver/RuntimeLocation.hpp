@@ -9,6 +9,7 @@ class RuntimeLocation {
     private:
         std::string path;
         std::string root;
+        bool root_explicit; //to check when location has no root
         std::vector<std::string> index;
         size_t client_max_body_size;
         std::map<int, std::string> error_pages;
@@ -39,6 +40,7 @@ class RuntimeLocation {
         // Getters
         const std::string& getPath() const;
         const std::string& getRoot() const;
+        bool hasExplicitRoot() const; //
         const std::vector<std::string>& getIndex() const;
         size_t getClientMaxBodySize() const;
         const std::map<int, std::string>& getErrorPages() const;

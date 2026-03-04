@@ -1,11 +1,15 @@
 #include "resolver/RuntimeLocation.hpp"
 #include <cstdlib>
 
-RuntimeLocation::RuntimeLocation(const std::string& nodePath) : path(nodePath), client_max_body_size(0), autoindex(false), has_return(false), has_upload(false), has_cgi(false) {}
+RuntimeLocation::RuntimeLocation(const std::string& nodePath) : path(nodePath), root_explicit(false), client_max_body_size(0), autoindex(false), has_return(false), has_upload(false), has_cgi(false) {}
 
 // Setters
 
-void RuntimeLocation::setRoot(const std::string& value) { root = value; }
+void RuntimeLocation::setRoot(const std::string& value) 
+{ 
+    root = value;
+    root_explicit = true;
+}
 
 void RuntimeLocation::setIndex(const std::vector<std::string>& values) {
     index = values;
@@ -89,6 +93,8 @@ void RuntimeLocation::setReturn(const std::vector<std::string>& args) {
 const std::string& RuntimeLocation::getPath() const { return path; }
 
 const std::string& RuntimeLocation::getRoot() const { return root; }
+
+bool RuntimeLocation::hasExplicitRoot() const { return root_explicit; }
 
 const std::vector<std::string>& RuntimeLocation::getIndex() const { return index; }
 

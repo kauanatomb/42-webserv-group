@@ -69,10 +69,19 @@ static bool hasTrailingSlash(const std::string& s) {
     return (!s.empty() && s[s.size() - 1] == '/');
 }
 
-static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc) {
+static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
+{
     std::string root = loc->getRoot();
-    std::string suffix = stripLocationPrefix(req.path, loc->getPath());
-    return joinPath(root, suffix);
+
+    //if location has its own root, treat it as "location directory"
+    if (loc->hasExplicitRoot())
+    {
+        std::string suffix = stripLocationPrefix(req.path, loc->getPath());
+        return joinPath(root, suffix);
+    }
+    //std::string suffix = stripLocationPrefix(req.path, loc->getPath());
+    //if root is inherited from server, keep the full URI path
+    return joinPath(root, req.path);
 }
 
 static std::string joinUri(const std::string& base, const std::string& name)
