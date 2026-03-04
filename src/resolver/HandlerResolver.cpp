@@ -5,20 +5,20 @@ std::string HandlerResolver::extractHostname(const std::string& host_header) {
     return (pos != std::string::npos) ? host_header.substr(0, pos) : host_header;
 }
 
-static bool isPrefixMatch(const std::string& uri, const std::string& locPath)
+static bool isPrefixMatch(const std::string& path, const std::string& locPath)
 {
-    if (uri == locPath)
+    if (path == locPath)
         return true;
     if (locPath == "/")
         return true;
-    if (uri.size() < locPath.size())
+    if (path.size() < locPath.size())
         return false;
-    if (uri.compare(0, locPath.size(), locPath) != 0)
+    if (path.compare(0, locPath.size(), locPath) != 0)
         return false;
-    return (uri[locPath.size()] == '/');
+    return (path[locPath.size()] == '/');
 }
 
-static const RuntimeLocation* matchLocation (const std::string& uri, const RuntimeServer& server)
+static const RuntimeLocation* matchLocation (const std::string& path, const RuntimeServer& server)
 {
     const std::vector<RuntimeLocation>& locs = server.getLocations();
     const RuntimeLocation* best = NULL;
@@ -29,7 +29,7 @@ static const RuntimeLocation* matchLocation (const std::string& uri, const Runti
         const RuntimeLocation& loc = locs[i];
         const std::string& p = loc.getPath();
 
-        if (isPrefixMatch(uri, p) && p.size() >= bestLen)
+        if (isPrefixMatch(path, p) && p.size() >= bestLen)
         {
             best = &loc;
             bestLen = p.size();
@@ -52,8 +52,8 @@ const RuntimeLocation* HandlerResolver::resolve(const RuntimeConfig& config, con
         const std::vector<std::string>& names = server_list[i].getServerNames();
         for (size_t j = 0; j < names.size(); ++j) {
             if (names[j] == hostname)
-                return matchLocation(req.uri, server_list[i]);
+                return matchLocation(req.path, server_list[i]);
         }
     }
-    return matchLocation(req.uri, server_list[0]);
+    return matchLocation(req.path, server_list[0]);
 }

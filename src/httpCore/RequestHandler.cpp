@@ -1,10 +1,8 @@
 #include "resolver/RuntimeServer.hpp"
 #include "httpCore/RequestHandler.hpp"
-#include "httpCore/HttpResponse.hpp"
 #include "resolver/RuntimeLocation.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include "httpCore/ResponseBuilder.hpp"
-//includes for file existence/type and reading
 #include <fstream>
 #include <sstream>
 #include <sys/stat.h>
@@ -13,6 +11,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <dirent.h>
+#include <algorithm>
 
 static bool methodFromString (const std::string& s, HttpMethod& out)
 {
@@ -72,24 +71,8 @@ static bool hasTrailingSlash(const std::string& s) {
 
 static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc) {
     std::string root = loc->getRoot();
-    //1- get uri path (basic)
-    std::string uri = req.uri;
-    std::string::size_type q = uri.find('?');
-    if (q != std::string::npos)
-        uri = uri.substr(0, q);
-
-    //2- take suffix after location prefix
-    std::string suffix = stripLocationPrefix(uri, loc->getPath()); //begins with /
-
-    //3- filesystem path = root + suffix
-    std::string full = joinPath(root, suffix);
-
-    //4- if uri ends with / or points to a directory -> append index[0] if exists
-    const std::vector<std::string>& idx = loc->getIndex(); 
-    if ((hasTrailingSlash(uri) || isDirectory(full)) && !idx.empty())
-        full = joinPath(full, idx[0]);
-
-    return full;
+    std::string suffix = stripLocationPrefix(req.path, loc->getPath());
+    return joinPath(root, suffix);
 }
 
 static std::string joinUri(const std::string& base, const std::string& name)
@@ -118,28 +101,31 @@ static std::string htmlEscape(const std::string& s)
     return out;
 }
 
-
-static HttpResponse buildAutoindex (const std::string& dirPath,
-                                    const std::string& uriBase,
-                                    const RuntimeLocation* loc)
+static HttpResponse buildAutoindex (const std::string& dirPath, const std::string& uriBase, const RuntimeLocation* loc)
 {
     DIR* d = opendir(dirPath.c_str());
     if (!d)
         return ErrorHandler::build(403, loc);
-    
+
+    std::vector<std::string> entries;
+    for (struct dirent* ent = readdir(d); ent; ent = readdir(d))
+    {
+        std::string name = ent->d_name;
+        if (name != "." && name != "..")
+            entries.push_back(name);
+    }
+    closedir(d);
+    std::sort(entries.begin(), entries.end());
+
     std::ostringstream out;
     out << "<!doctype html><html><head><meta charset=\"utf-8\">"
         << "<title>Index of " << htmlEscape(uriBase) << "</title></head><body>"
         << "<h1>Index of " << htmlEscape(uriBase) << "</h1><ul>";
-    
-    for (struct dirent* ent = readdir(d); ent; ent = readdir(d))
-    {
-        std::string name = ent->d_name;
 
-        if (name == "." || name == "..")
-            continue;
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        std::string name = entries[i];
         std::string href = joinUri(uriBase, name);
-        //add trainling slash for dir if poss
         std::string fullEntryPath = joinPath(dirPath, name);
         if (isDirectory(fullEntryPath))
         {
@@ -149,7 +135,6 @@ static HttpResponse buildAutoindex (const std::string& dirPath,
         out << "<li><a href=\"" << htmlEscape(href) << "\">"
             << htmlEscape(name) << "</a></li>";
     }
-    closedir(d);
     
     out << "</ul></body></html>\n";
 
@@ -157,60 +142,54 @@ static HttpResponse buildAutoindex (const std::string& dirPath,
     return ResponseBuilder::ok(out.str(), ".html");
 }
 
-static HttpResponse serveFileGET(const std::string& finalPath, 
-                                 const HttpRequest& req, 
-                                 const RuntimeLocation* loc,
-                                 const std::string& basePath)
+static HttpResponse serveRegularFile(const std::string& filePath, const RuntimeLocation* loc)
 {
-    struct stat st;
-    //if finalPath doesn't exist -> autoindex fallback
-
-    if (stat(finalPath.c_str(), &st) != 0)
-    {
-        if (errno == ENOENT && loc && loc->getAutoindex() && isDirectory(basePath))
-        {
-            std::string uriBase = req.uri;
-            if (!hasTrailingSlash(uriBase)) uriBase += "/";
-            return (buildAutoindex(basePath, uriBase, loc));
-        }
-        return ErrorHandler::build(404, loc);
-    }
-    // if finalPath is a dirctory: autoindex or deny:
-    if (S_ISDIR(st.st_mode))
-    {
-        if (!loc || !loc->getAutoindex())
-            return ErrorHandler::build(403, "Directory listing denied\n", loc);
-        
-        //using request URI base to have correct links:
-        std::string uriBase = req.uri;
-        if (!hasTrailingSlash(uriBase)) uriBase += "/";
-        return buildAutoindex(finalPath, uriBase, loc);
-    }
-
-    if (access(finalPath.c_str(), R_OK) != 0)
+    if (access(filePath.c_str(), R_OK) != 0)
         return ErrorHandler::build(403, loc);
 
-    std::ifstream in(finalPath.c_str(), std::ios::in | std::ios::binary);
+    std::ifstream in(filePath.c_str(), std::ios::in | std::ios::binary);
     if (!in.is_open())
         return ErrorHandler::build(500, loc);
 
     std::ostringstream ss;
     ss << in.rdbuf();
-
-    return ResponseBuilder::ok(ss.str(), finalPath);
+    return ResponseBuilder::ok(ss.str(), filePath);
 }
 
+static HttpResponse serveDirectory(const std::string& dirPath, const HttpRequest& req, const RuntimeLocation* loc)
+{
+    // try index file first
+    const std::vector<std::string>& idx = loc->getIndex();
+    if (!idx.empty())
+    {
+        struct stat st;
+        std::string candidate = joinPath(dirPath, idx[0]);
+        if (stat(candidate.c_str(), &st) == 0 && S_ISREG(st.st_mode))
+            return serveRegularFile(candidate, loc);
+    }
+    // fallback to autoindex
+    if (!loc || !loc->getAutoindex())
+        return ErrorHandler::build(403, "Directory listing denied\n", loc);
 
+    std::string uriBase = req.path;
+    if (!hasTrailingSlash(uriBase)) uriBase += "/";
+    return buildAutoindex(dirPath, uriBase, loc);
+}
 
+static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest& req, const RuntimeLocation* loc)
+{
+    struct stat st;
+    if (stat(basePath.c_str(), &st) != 0)
+        return ErrorHandler::build(404, loc);
 
+    if (S_ISDIR(st.st_mode))
+        return serveDirectory(basePath, req, loc);
 
+    return serveRegularFile(basePath, loc);
+}
 
 HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocation* loc) {
     //1-redirection handling (return directive) 
-    //need NULL check?
-    if (!loc)
-        return ErrorHandler::build(500, "No location resolved\n", loc);
-
     if (loc->getHasReturn()) {
         const ReturnRule& r = loc->getRedirect();
         if (r.target.empty())
@@ -225,28 +204,14 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
     return ErrorHandler::build405(loc->getAllowedMethods(), loc);
 
     // 3- resolve filesystem path
-    if (req.method == "GET") // I believe Fran will create get functions for request than we can change it
-    {
-        // std::string path = resolvePath(req, loc);
-        // return serveFileGET(path, req, loc);
-        
+    if (req.method == "GET")
+    {   
         //build base path (no index)
-        std::string uri = req.uri;
-        std::string::size_type q = uri.find('?');
-        if (q != std::string::npos)
-            uri = uri.substr(0, q);
-
-        std::string suffix = stripLocationPrefix(uri, loc->getPath());
-        std::string basePath = joinPath(loc->getRoot(), suffix);
-
-        //final path (adding index if needed)
-        std::string finalPath = resolvePath(req, loc);
-
-        return serveFileGET(finalPath, req, loc, basePath);
+        std::string basePath = resolvePath(req, loc);
+        return serveFileGET(basePath, req, loc);
     }
     
     // TEMP until post/delete:
-
     if (req.method == "POST" || req.method == "DELETE")
         return ErrorHandler::build(501, loc);
 
