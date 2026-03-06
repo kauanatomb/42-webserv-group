@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Content-Type: text/html"
+echo ""
+echo "<html>"
+echo "<body>"
+echo "<h1>CGI Bash Script</h1>"
+echo "<p>REQUEST_METHOD: $REQUEST_METHOD</p>"
+echo "<p>QUERY_STRING: $QUERY_STRING</p>"
+echo "<p>SCRIPT_NAME: $SCRIPT_NAME</p>"
+echo "<p>PATH_INFO: $PATH_INFO</p>"
+echo "<p>SERVER_PROTOCOL: $SERVER_PROTOCOL</p>"
+echo "<p>Date: $(date)</p>"
+echo "<p>Hostname: $(hostname)</p>"
+echo "</body>"
+echo "</html>"

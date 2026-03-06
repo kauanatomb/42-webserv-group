@@ -1,5 +1,6 @@
 #include "resolver/RuntimeServer.hpp"
 #include "httpCore/RequestHandler.hpp"
+#include "httpCore/CgiHandler.hpp"
 #include "resolver/RuntimeLocation.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include "httpCore/ResponseBuilder.hpp"
@@ -178,10 +179,13 @@ static HttpResponse serveDirectory(const std::string& dirPath, const HttpRequest
 
 static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest& req, const RuntimeLocation* loc)
 {
+    if (loc->getHasCGI() && CgiHandler::matchCgiExtension(basePath, loc))
+        return CgiHandler(req, basePath, loc).execute();
+
     struct stat st;
     if (stat(basePath.c_str(), &st) != 0)
         return ErrorHandler::build(404, loc);
-
+    
     if (S_ISDIR(st.st_mode))
         return serveDirectory(basePath, req, loc);
 
@@ -207,8 +211,8 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
     if (req.method == "GET")
     {   
         //build base path (no index)
-        std::string basePath = resolvePath(req, loc);
-        return serveFileGET(basePath, req, loc);
+        std::string fsPath = resolvePath(req, loc);
+        return serveFileGET(fsPath, req, loc);
     }
     
     // TEMP until post/delete:

@@ -2,22 +2,26 @@
 
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
-#include "../resolver/RuntimeLocation.hpp"
+#include "resolver/RuntimeLocation.hpp"
+#include <vector>
+#include <string>
 
 class CgiHandler {
     public:
-        CgiHandler(const HttpRequest& req, const RuntimeLocation* loc);
-
+        CgiHandler(const HttpRequest& req, std::string fsPath, const RuntimeLocation* loc);
+        static bool matchCgiExtension(std::string fsPath, const RuntimeLocation* loc);
         HttpResponse execute();
 
     private:
-        const HttpRequest& req_;
-        const RuntimeLocation* loc_;
-        std::string scriptPath_;
-        std::string cgiBinary_;
+        static const int CGI_TIMEOUT = 5; // seconds
+
+        const HttpRequest& _req;
+        const RuntimeLocation* _loc;
+        std::string _scriptPath;
+        std::string _cgiBinary;
         
         // helpers
-        void setupEnvironment();
-        std::string readStdin();          // POST
-        HttpResponse parseCgiOutput();    // convert stdout script to HttpResponse
+        char** buildEnv();
+        void freeEnv(char** envp);
+        HttpResponse parseCgiOutput(const std::string& out);
 };
