@@ -29,20 +29,19 @@ static std::string intToStr(int n) {
 
 // ─── constructor / matchCgiExtension ──────────────────────
 
-CgiHandler::CgiHandler(const HttpRequest& req, std::string fsPath, const RuntimeLocation* loc)
-    : _req(req), _loc(loc), _scriptPath(fsPath)
+CgiHandler::CgiHandler(const HttpRequest& req, const std::string& scriptFsPath, const RuntimeLocation* loc)
+    : _req(req), _loc(loc), _scriptPath(scriptFsPath)
 {
-    _cgiBinary = takeBinary(fsPath, _loc);
+    _cgiBinary = takeBinary(_scriptPath, _loc);
 }
 
-bool CgiHandler::matchCgiExtension(std::string fsPath, const RuntimeLocation* loc) {
-    size_t pos = fsPath.rfind(".");
+bool CgiHandler::matchCgiExtension(const std::string& fsPath, const RuntimeLocation* loc) {
+    size_t pos = fsPath.rfind('.');
     if (pos == std::string::npos)
         return false;
     std::string ext = fsPath.substr(pos);
     const std::map<std::string, std::string>& cgi_exec = loc->getCGIExec();
-    std::map<std::string, std::string>::const_iterator it = cgi_exec.find(ext);
-    return (it != cgi_exec.end());
+    return (cgi_exec.find(ext) != cgi_exec.end());
 }
 
 // ─── buildEnv ─────────────────────────────────────────────
@@ -51,14 +50,21 @@ bool CgiHandler::matchCgiExtension(std::string fsPath, const RuntimeLocation* lo
 char** CgiHandler::buildEnv() {
     std::vector<std::string> env;
 
+    env.push_back("AUTH_TYPE=");
     env.push_back("REQUEST_METHOD=" + _req.method);
     env.push_back("QUERY_STRING=" + _req.query);
     env.push_back("SCRIPT_NAME=" + _req.path);
     env.push_back("SCRIPT_FILENAME=" + _scriptPath);
-    env.push_back("PATH_INFO=" + _req.path);
+    env.push_back("PATH_INFO=" + _req.pathInfo);
+    env.push_back("PATH_TRANSLATED=" + (_req.pathInfo.empty() ? "" : _loc->getRoot() + _req.pathInfo));
     env.push_back("SERVER_PROTOCOL=" + _req.version);
     env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-    env.push_back("REDIRECT_STATUS=200");
+    env.push_back("SERVER_SOFTWARE=webserv/1.0");
+    env.push_back("SERVER_PORT=" + intToStr(_req.serverPort));
+    env.push_back("REMOTE_ADDR=" + _req.clientIp);
+    env.push_back("REMOTE_HOST=" + _req.clientIp);
+    env.push_back("REMOTE_IDENT=");
+    env.push_back("REMOTE_USER=");
 
     // forward relevant HTTP headers
     std::string ct = _req.getHeader("Content-Type");

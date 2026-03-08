@@ -8,8 +8,8 @@
 
 class CgiHandler {
     public:
-        CgiHandler(const HttpRequest& req, std::string fsPath, const RuntimeLocation* loc);
-        static bool matchCgiExtension(std::string fsPath, const RuntimeLocation* loc);
+        CgiHandler(const HttpRequest& req, const std::string& scriptFsPath, const RuntimeLocation* loc);
+        static bool matchCgiExtension(const std::string& fsPath, const RuntimeLocation* loc);
         HttpResponse execute();
 
     private:
