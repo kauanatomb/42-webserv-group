@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <stdint.h>
 
 class HttpRequest 
 {
@@ -13,6 +14,11 @@ class HttpRequest
         std::string version; // Http/1.1
         std::map<std::string, std::string> headers;
         std::string body;
+        
+        // connection metadata (populated by HandlerResolver)
+        std::string pathInfo;  // extra path in case CGI script
+        std::string clientIp;
+        uint16_t    serverPort;
 
         std::string getHeader(const std::string& key) const;
         void print() const;

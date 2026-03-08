@@ -37,4 +37,6 @@ class Connection {
 
         ConnectionState _state;
         bool _keep_alive;
+
+        void processRequest();
 };
