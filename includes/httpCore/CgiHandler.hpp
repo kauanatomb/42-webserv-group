@@ -24,4 +24,8 @@ class CgiHandler {
         char** buildEnv();
         void freeEnv(char** envp);
         HttpResponse parseCgiOutput(const std::string& out);
+        HttpResponse validateCgiPreconditions();
+        void executeChild(int outfd[2], int infd[2]);
+        void sendRequestBody(int fd);
+        HttpResponse readCgiOutputWithTimeout(int fd, pid_t pid);
 };

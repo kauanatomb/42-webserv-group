@@ -179,9 +179,6 @@ static HttpResponse serveDirectory(const std::string& dirPath, const HttpRequest
 
 static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest& req, const RuntimeLocation* loc)
 {
-    if (loc->getHasCGI() && CgiHandler::matchCgiExtension(basePath, loc))
-        return CgiHandler(req, basePath, loc).execute();
-
     struct stat st;
     if (stat(basePath.c_str(), &st) != 0)
         return ErrorHandler::build(404, loc);
@@ -205,16 +202,19 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
     if (methodErr == 501)
         return ErrorHandler::build(501, loc);
     if (methodErr == 405)
-    return ErrorHandler::build405(loc->getAllowedMethods(), loc);
+        return ErrorHandler::build405(loc->getAllowedMethods(), loc);
 
     // 3- resolve filesystem path
+    std::string fsPath = resolvePath(req, loc);
+
+    // 4- CGI takes priority: any method is delegated to the script
+    if (loc->getHasCGI() && CgiHandler::matchCgiExtension(fsPath, loc))
+        return CgiHandler(req, fsPath, loc).execute();
+
+    // 5- static file handling per method
     if (req.method == "GET")
-    {   
-        //build base path (no index)
-        std::string fsPath = resolvePath(req, loc);
         return serveFileGET(fsPath, req, loc);
-    }
-    
+
     // TEMP until post/delete:
     if (req.method == "POST" || req.method == "DELETE")
         return ErrorHandler::build(501, loc);

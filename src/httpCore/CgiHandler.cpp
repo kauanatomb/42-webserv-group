@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <sstream>
+#include <sys/stat.h>
 
 // ─── helpers ──────────────────────────────────────────────
 
@@ -27,7 +28,6 @@ static std::string intToStr(int n) {
     return oss.str();
 }
 
-// ─── constructor / matchCgiExtension ──────────────────────
 
 CgiHandler::CgiHandler(const HttpRequest& req, const std::string& scriptFsPath, const RuntimeLocation* loc)
     : _req(req), _loc(loc), _scriptPath(scriptFsPath)
@@ -44,7 +44,6 @@ bool CgiHandler::matchCgiExtension(const std::string& fsPath, const RuntimeLocat
     return (cgi_exec.find(ext) != cgi_exec.end());
 }
 
-// ─── buildEnv ─────────────────────────────────────────────
 // CGI/1.1 environment variables (RFC 3875)
 
 char** CgiHandler::buildEnv() {
@@ -94,10 +93,6 @@ void CgiHandler::freeEnv(char** envp) {
         free(envp[i]);
     delete[] envp;
 }
-
-// ─── parseCgiOutput ───────────────────────────────────────
-// CGI scripts output: "Header: value\r\n...\r\n\r\nBody"
-// At minimum: "Content-Type: text/html\n\nBody"
 
 HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
     HttpResponse resp;
@@ -160,54 +155,71 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
     return resp;
 }
 
-// ─── execute ──────────────────────────────────────────────
+HttpResponse CgiHandler::validateCgiPreconditions() {
+    struct stat st;
+    HttpResponse err;
 
-HttpResponse CgiHandler::execute() {
-    int pipefd[2];
-    if (pipe(pipefd) < 0) {
-        HttpResponse err;
-        err.status_code = 500;
-        err.reason_phrase = "Internal Server Error";
-        err.body = "pipe() failed";
+    if (stat(_scriptPath.c_str(), &st) < 0 || !S_ISREG(st.st_mode)) {
+        err.status_code = 404;
+        err.reason_phrase = "Not Found";
+        err.body = "CGI script not found: " + _scriptPath;
         return err;
     }
-
-    pid_t pid = fork();
-    if (pid < 0) {
-        close(pipefd[0]);
-        close(pipefd[1]);
-        HttpResponse err;
+    if (stat(_cgiBinary.c_str(), &st) < 0) {
         err.status_code = 500;
         err.reason_phrase = "Internal Server Error";
-        err.body = "fork() failed";
+        err.body = "CGI interpreter not found: " + _cgiBinary;
         return err;
     }
+    err.status_code = 0;
+    return err;
+}
 
-    if (pid == 0) {
-        // ─── child process ───
-        close(pipefd[0]);                      // close read-end
-        dup2(pipefd[1], STDOUT_FILENO);        // redirect stdout → pipe
-        close(pipefd[1]);                      // close original write-end after dup
+// ─── executeChild ─────────────────────────────────────────
+// Child process: setup pipes, exec CGI script (never returns)
 
-        char* argv[3];
-        argv[0] = strdup(_cgiBinary.c_str());
-        argv[1] = strdup(_scriptPath.c_str());
-        argv[2] = NULL;
+void CgiHandler::executeChild(int outfd[2], int infd[2]) {
+    close(outfd[0]);  // close read-end of stdout pipe
+    dup2(outfd[1], STDOUT_FILENO);  // redirect stdout -> pipe
+    close(outfd[1]);
 
-        char** envp = buildEnv();
-        execve(_cgiBinary.c_str(), argv, envp);
+    close(infd[1]); // close write-end of stdin pipe
+    dup2(infd[0], STDIN_FILENO); // redirect pipe -> stdin
+    close(infd[0]);
 
-        // execve only returns on failure
-        free(argv[0]);
-        free(argv[1]);
-        freeEnv(envp);
-        _exit(1);
+    char* argv[3];
+    argv[0] = strdup(_cgiBinary.c_str());
+    argv[1] = strdup(_scriptPath.c_str());
+    argv[2] = NULL;
+
+    char** envp = buildEnv();
+    execve(_cgiBinary.c_str(), argv, envp);
+
+    // execve only returns on failure
+    free(argv[0]);
+    free(argv[1]);
+    freeEnv(envp);
+    _exit(1);
+}
+
+// Send POST body to child's stdin
+void CgiHandler::sendRequestBody(int fd) {
+    if (_req.body.empty())
+        return;
+
+    const char* data = _req.body.c_str();
+    size_t remaining = _req.body.size();
+    while (remaining > 0) {
+        ssize_t w = write(fd, data, remaining);
+        if (w <= 0)
+            break;
+        data += w;
+        remaining -= w;
     }
+}
 
-    // ─── parent process ───
-    close(pipefd[1]); // close write-end
-
-    // read CGI output with timeout
+// Read CGI output with timeout, kill child if exceeded
+HttpResponse CgiHandler::readCgiOutputWithTimeout(int fd, pid_t pid) {
     std::string output;
     char buffer[4096];
     ssize_t n;
@@ -218,7 +230,7 @@ HttpResponse CgiHandler::execute() {
         if (difftime(time(NULL), startTime) >= CGI_TIMEOUT) {
             kill(pid, SIGKILL);
             waitpid(pid, NULL, 0);
-            close(pipefd[0]);
+            close(fd);
 
             HttpResponse err;
             err.status_code = 504;
@@ -227,18 +239,18 @@ HttpResponse CgiHandler::execute() {
             return err;
         }
 
-        n = read(pipefd[0], buffer, sizeof(buffer));
+        n = read(fd, buffer, sizeof(buffer));
         if (n > 0)
             output.append(buffer, n);
         else if (n == 0)
-            break; // EOF — child closed its stdout
+            break; // EOF
         else {
             if (errno == EINTR)
                 continue;
             break; // read error
         }
     }
-    close(pipefd[0]);
+    close(fd);
 
     int status;
     waitpid(pid, &status, 0);
@@ -253,4 +265,45 @@ HttpResponse CgiHandler::execute() {
     }
 
     return parseCgiOutput(output);
+}
+
+// Main orchestrator: validate, fork, coordinate parent/child
+HttpResponse CgiHandler::execute() {
+    HttpResponse validation = validateCgiPreconditions();
+    if (validation.status_code != 0)
+        return validation;
+
+    int outfd[2]; // child stdout -> parent reads
+    int infd[2];  // parent writes -> child stdin
+    if (pipe(outfd) < 0 || pipe(infd) < 0) {
+        HttpResponse err;
+        err.status_code = 500;
+        err.reason_phrase = "Internal Server Error";
+        err.body = "pipe() failed";
+        return err;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(outfd[0]); close(outfd[1]);
+        close(infd[0]);  close(infd[1]);
+        HttpResponse err;
+        err.status_code = 500;
+        err.reason_phrase = "Internal Server Error";
+        err.body = "fork() failed";
+        return err;
+    }
+
+    if (pid == 0) {
+        executeChild(outfd, infd); // never returns
+    }
+
+    // ─── parent process ───
+    close(outfd[1]); // close write-end of stdout pipe
+    close(infd[0]);  // close read-end of stdin pipe
+
+    sendRequestBody(infd[1]);
+    close(infd[1]); // signal EOF to child's stdin
+
+    return readCgiOutputWithTimeout(outfd[0], pid);
 }
