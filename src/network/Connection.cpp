@@ -36,22 +36,33 @@ void Connection::onReadable() {
 
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
-    if (_parser.parse(_read_buffer, _request)) {
-        if (_parser.hasError()) {
-            int status = _parser.getErrorStatus();
-            (void)status; // TODO remove when HttpResponse::fromStatus(status) will be ready
-            // _response = HttpResponse::fromStatus(status);
+
+    //if (_parser.parse(_read_buffer, _request)) {
+    //if request is not complete yet, do NOT respond
+
+    if (!_parser.parse(_read_buffer, _request)) {
+
+        _state = READING;
+        return;
+    }
+
+    //request is complete or parser error
+    if (_parser.hasError()) {
+        int status = _parser.getErrorStatus();
+            //(void)status; TODO remove when HttpResponse::fromStatus(status) will be ready
+        // _response = HttpResponse::fromStatus(status);
+        _response = ErrorHandler::build(status, (const RuntimeLocation*)NULL);
         } else {
             _request.print();
             const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
-            if (!loc)
-                _response = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
-            else {
+            if (!loc) {
+                _response = ErrorHandler::build(500, "Resolver returned NULL location \n", (const RuntimeLocation*)NULL);
+            } else {
                 RequestHandler handler;
                 _response = handler.handle(_request, loc);
             }
         }
-    }
+    
     _write_buffer = _response.serialize();
     _state = WRITING;
 }

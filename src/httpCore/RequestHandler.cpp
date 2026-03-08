@@ -12,6 +12,117 @@
 #include <iostream>
 #include <dirent.h>
 #include <algorithm>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <ctime>
+#include <cstdio>
+
+static std::string joinPath(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1);
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;
+    return a + b;
+}
+
+static bool hasTrailingSlash(const std::string& s) {
+    return (!s.empty() && s[s.size() - 1] == '/');
+}
+
+static bool isDir(const std::string& p)
+{
+    struct stat st;
+    if (stat(p.c_str(), &st) != 0) return false;
+    return S_ISDIR(st.st_mode);
+}
+
+static bool canWriteDir(const std::string& p)
+{
+    return (access(p.c_str(), W_OK) == 0);
+}
+static std::string itos_ulong(unsigned long v)
+{
+    std::ostringstream oss;
+    oss << v;
+    return oss.str();
+}
+
+//build the file's name
+static std::string makeUploadFilename()
+{
+    unsigned long t = static_cast<unsigned long>(std::time(NULL));
+    unsigned long pid = static_cast<unsigned long>(getpid());
+    return std::string("upload_") + itos_ulong(t) + "_" + itos_ulong(pid) + ".bin";
+}
+static bool writeFileBinary(const std::string& filePath, const std::string& data)
+{
+    int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+        return false;
+    
+    const char* buf = data.c_str();
+    size_t total = data.size();
+    size_t off = 0;
+    while (off < total)
+    {
+        ssize_t n = write(fd, buf + off, total - off);
+        if (n < 0)
+        {
+            if (errno == EINTR) continue;
+            close(fd);
+            return false;
+        }
+        off += static_cast<size_t>(n);
+    }
+    close(fd);
+    return true;
+}
+
+static HttpResponse handlePOST(const HttpRequest& req, const RuntimeLocation* loc)
+{
+    //1- 413 check (only if max > 0)
+    size_t maxBody = loc->getClientMaxBodySize();
+    if (maxBody > 0 && req.body.size() > maxBody)
+        return ErrorHandler::build(413, loc);
+
+    //2- upload enabled?
+    if (!loc->getHasUpload())
+        return ErrorHandler::build(501, loc);
+
+    //3- validate upload_store
+    const std::string& store = loc->getUploadStore();
+    if (store.empty())
+        return ErrorHandler::build(500, "upload_store not configured\n", loc);
+    
+    if (!isDir(store))
+        return ErrorHandler::build(500, "upload_store is not a directory\n", loc);
+    
+    if (!canWriteDir(store))
+        return ErrorHandler::build(403, "upload_store not writable\n", loc);
+    
+    // 4- write file
+    std::string filename = makeUploadFilename();
+    std::string fullPath = joinPath(store, filename);
+
+    if (!writeFileBinary(fullPath, req.body))
+        return ErrorHandler::build(500, "failed to write upload file\n", loc);
+    //5- return 201 created 
+    HttpResponse res;
+    res.status_code = 201;
+    res.reason_phrase = "Created";
+    res.headers["Content-Type"] = "text/plain";
+
+    //put it under the same URIpath
+    //depending on routing may not be directly retrievable
+    //std::string base = req.path;
+    //if (!hasTrailingSlash(base)) base += "/";
+    res.headers["Location"] = "/uploads/" + filename;
+    res.body = "Created\n";
+    return res;
+}
 
 static bool methodFromString (const std::string& s, HttpMethod& out)
 {
@@ -44,16 +155,6 @@ static bool isDirectory(const std::string& path)
     return S_ISDIR(st.st_mode);
 }
 
-static std::string joinPath(const std::string& a, const std::string& b)
-{
-    if (a.empty()) return b;
-    if (b.empty()) return a;
-    if (a[a.size() - 1] == '/' && b[0] == '/')
-        return a + b.substr(1);
-    if (a[a.size() - 1] != '/' && b[0] != '/')
-        return a + "/" + b;
-    return a + b;
-}
 
 static std::string stripLocationPrefix(const std::string& uri, const std::string& locPath)
 {
@@ -65,9 +166,7 @@ static std::string stripLocationPrefix(const std::string& uri, const std::string
     return uri.substr(locPath.size()); // starts with /
 }
 
-static bool hasTrailingSlash(const std::string& s) {
-    return (!s.empty() && s[s.size() - 1] == '/');
-}
+
 
 static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
 {
@@ -82,6 +181,34 @@ static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* lo
     //std::string suffix = stripLocationPrefix(req.path, loc->getPath());
     //if root is inherited from server, keep the full URI path
     return joinPath(root, req.path);
+}
+
+static HttpResponse handleDELETE(const HttpRequest& req, const RuntimeLocation* loc)
+{
+    std::string target = resolvePath(req, loc);
+
+    struct stat st;
+    if (stat(target.c_str(), &st) != 0)
+        return ErrorHandler::build(404, loc);
+
+    // do not delete directories
+    if (S_ISDIR(st.st_mode))
+        return ErrorHandler::build(403, "Cannot delete a directory\n", loc);
+
+    //check permission write on file
+    if (access(target.c_str(), W_OK) != 0)
+        return ErrorHandler::build(403, loc);
+
+    if (std::remove(target.c_str()) != 0)
+        return ErrorHandler::build(500, "Failed to delete file\n", loc);
+    
+    HttpResponse res;
+    res.status_code = 204;
+    res.reason_phrase = "No Content";
+    res.body = "";
+    //content-length should become 0 automatically in serialize()
+    return res;
+
 }
 
 static std::string joinUri(const std::string& base, const std::string& name)
@@ -198,6 +325,7 @@ static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest&
 }
 
 HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocation* loc) {
+
     //1-redirection handling (return directive) 
     if (loc->getHasReturn()) {
         const ReturnRule& r = loc->getRedirect();
@@ -220,9 +348,10 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
         return serveFileGET(basePath, req, loc);
     }
     
-    // TEMP until post/delete:
-    if (req.method == "POST" || req.method == "DELETE")
-        return ErrorHandler::build(501, loc);
+    if (req.method == "POST") return handlePOST(req, loc);
+
+    if (req.method == "DELETE") return handleDELETE(req, loc);
 
     return ErrorHandler::build(501, "Fallback\n", loc);
 }
+
