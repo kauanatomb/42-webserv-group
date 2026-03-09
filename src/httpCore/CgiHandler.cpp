@@ -1,4 +1,5 @@
 #include "httpCore/CgiHandler.hpp"
+#include "httpCore/ErrorHandler.hpp"
 #include "network/ServerEngine.hpp"
 #include <iostream>
 #include <unistd.h>
@@ -147,24 +148,14 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
     return resp;
 }
 
-HttpResponse CgiHandler::validateCgiPreconditions() {
+int CgiHandler::validateCgiPreconditions() {
     struct stat st;
-    HttpResponse err;
 
-    if (stat(_scriptPath.c_str(), &st) < 0 || !S_ISREG(st.st_mode)) {
-        err.status_code = 404;
-        err.reason_phrase = "Not Found";
-        err.body = "CGI script not found: " + _scriptPath;
-        return err;
-    }
-    if (stat(_cgiBinary.c_str(), &st) < 0) {
-        err.status_code = 500;
-        err.reason_phrase = "Internal Server Error";
-        err.body = "CGI interpreter not found: " + _cgiBinary;
-        return err;
-    }
-    err.status_code = 0;
-    return err;
+    if (stat(_scriptPath.c_str(), &st) < 0 || !S_ISREG(st.st_mode))
+        return 404;
+    if (stat(_cgiBinary.c_str(), &st) < 0)
+        return 500;
+    return 0;
 }
 
 // Child process: setup pipes, exec CGI script (never returns)
@@ -216,16 +207,10 @@ void CgiHandler::sendRequestBody(int fd) {
 }
 
 // Kill CGI child and return an error response
-static HttpResponse killAndReturn(int fd, pid_t pid, int code, const std::string& reason, const std::string& body) {
+static void killChild(int fd, pid_t pid) {
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
     close(fd);
-
-    HttpResponse err;
-    err.status_code = code;
-    err.reason_phrase = reason;
-    err.body = body;
-    return err;
 }
 
 // Read CGI output with timeout, kill child if exceeded
@@ -240,10 +225,14 @@ HttpResponse CgiHandler::readCgiOutputWithTimeout(int fd, pid_t pid) {
 
     while (true) {
         double elapsed = difftime(time(NULL), startTime);
-        if (elapsed >= CGI_TIMEOUT)
-            return killAndReturn(fd, pid, 504, "Gateway Timeout", "CGI script timed out");
-        if (ServerEngine::shutdownFlag)
-            return killAndReturn(fd, pid, 503, "Service Unavailable", "Server shutting down");
+        if (elapsed >= CGI_TIMEOUT) {
+            killChild(fd, pid);
+            return ErrorHandler::build(504, "CGI script timed out\n", _loc);
+        }
+        if (ServerEngine::shutdownFlag) {
+            killChild(fd, pid);
+            return ErrorHandler::build(503, "Server shutting down\n", _loc);
+        }
 
         int ms = (CGI_TIMEOUT - (int)elapsed) * 1000;
         if (ms > 500)
@@ -269,42 +258,28 @@ HttpResponse CgiHandler::readCgiOutputWithTimeout(int fd, pid_t pid) {
 
     int status = 0;
     pid_t wp = waitpid(pid, &status, 0);
-    if (wp > 0 && WIFEXITED(status) && WEXITSTATUS(status) != 0 && output.empty()) {
-        HttpResponse err;
-        err.status_code = 502;
-        err.reason_phrase = "Bad Gateway";
-        err.body = "CGI script exited with error";
-        return err;
-    }
+    if (wp > 0 && WIFEXITED(status) && WEXITSTATUS(status) != 0 && output.empty())
+        return ErrorHandler::build(502, "CGI script exited with error\n", _loc);
 
     return parseCgiOutput(output);
 }
 
 // Main orchestrator: validate, fork, coordinate parent/child
 HttpResponse CgiHandler::execute() {
-    HttpResponse validation = validateCgiPreconditions();
-    if (validation.status_code != 0)
-        return validation;
+    int preCheck = validateCgiPreconditions();
+    if (preCheck != 0)
+        return ErrorHandler::build(preCheck, _loc);
 
     int outfd[2]; // child stdout -> parent reads
     int infd[2];  // parent writes -> child stdin
-    if (pipe(outfd) < 0 || pipe(infd) < 0) {
-        HttpResponse err;
-        err.status_code = 500;
-        err.reason_phrase = "Internal Server Error";
-        err.body = "pipe() failed";
-        return err;
-    }
+    if (pipe(outfd) < 0 || pipe(infd) < 0)
+        return ErrorHandler::build(500, "pipe() failed\n", _loc);
 
     pid_t pid = fork();
     if (pid < 0) {
         close(outfd[0]); close(outfd[1]);
         close(infd[0]);  close(infd[1]);
-        HttpResponse err;
-        err.status_code = 500;
-        err.reason_phrase = "Internal Server Error";
-        err.body = "fork() failed";
-        return err;
+        return ErrorHandler::build(500, "fork() failed\n", _loc);
     }
 
     if (pid == 0) {
