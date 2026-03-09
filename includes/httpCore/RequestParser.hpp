@@ -33,8 +33,6 @@ class RequestParser
         bool parseChunkSize(std::string& buffer);
         bool parseChunkData(std::string& buffer, HttpRequest& request);
         bool parseChunkFinalCRLF(std::string& buffer);
-
-
 };
 
 #endif
