@@ -3,9 +3,9 @@
 #include <vector>
 #include <map>
 #include <poll.h>
+#include <csignal>
 #include "resolver/RuntimeConfig.hpp"
 #include "Connection.hpp"
-// #include "RequestHandler.hpp"
 
 class ServerEngine {
     private:
@@ -38,6 +38,8 @@ class ServerEngine {
         static void signalHandler(int signum);
 
     public:
+        static volatile sig_atomic_t shutdownFlag;
+
         ServerEngine(const RuntimeConfig& config);
         ~ServerEngine();
 

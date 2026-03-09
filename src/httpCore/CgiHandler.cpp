@@ -1,4 +1,5 @@
 #include "httpCore/CgiHandler.hpp"
+#include "network/ServerEngine.hpp"
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
@@ -7,8 +8,7 @@
 #include <signal.h>
 #include <sstream>
 #include <sys/stat.h>
-
-// ─── helpers ──────────────────────────────────────────────
+#include <poll.h>
 
 static std::string takeBinary(std::string path, const RuntimeLocation* loc) {
     size_t pos = path.rfind(".");
@@ -28,7 +28,6 @@ static std::string intToStr(int n) {
     return oss.str();
 }
 
-
 CgiHandler::CgiHandler(const HttpRequest& req, const std::string& scriptFsPath, const RuntimeLocation* loc)
     : _req(req), _loc(loc), _scriptPath(scriptFsPath)
 {
@@ -45,7 +44,6 @@ bool CgiHandler::matchCgiExtension(const std::string& fsPath, const RuntimeLocat
 }
 
 // CGI/1.1 environment variables (RFC 3875)
-
 char** CgiHandler::buildEnv() {
     std::vector<std::string> env;
 
@@ -65,7 +63,6 @@ char** CgiHandler::buildEnv() {
     env.push_back("REMOTE_IDENT=");
     env.push_back("REMOTE_USER=");
 
-    // forward relevant HTTP headers
     std::string ct = _req.getHeader("Content-Type");
     if (!ct.empty())
         env.push_back("CONTENT_TYPE=" + ct);
@@ -78,7 +75,6 @@ char** CgiHandler::buildEnv() {
     if (!host.empty())
         env.push_back("SERVER_NAME=" + host);
 
-    // allocate char** array
     char** envp = new char*[env.size() + 1];
     for (size_t i = 0; i < env.size(); ++i)
         envp[i] = strdup(env[i].c_str());
@@ -105,7 +101,6 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
         sepLen = 2;
     }
     if (sep == std::string::npos) {
-        // no header separator — treat everything as body
         resp.status_code = 200;
         resp.reason_phrase = "OK";
         resp.headers["Content-Type"] = "text/html";
@@ -113,7 +108,6 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
         return resp;
     }
 
-    // parse headers
     std::string headerBlock = out.substr(0, sep);
     resp.body = out.substr(sep + sepLen);
 
@@ -123,7 +117,6 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
     resp.reason_phrase = "OK";
 
     while (std::getline(iss, line)) {
-        // remove trailing \r
         if (!line.empty() && line[line.size() - 1] == '\r')
             line.erase(line.size() - 1);
         if (line.empty())
@@ -133,7 +126,6 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
             continue;
         std::string key = line.substr(0, colon);
         std::string val = line.substr(colon + 1);
-        // trim leading space
         if (!val.empty() && val[0] == ' ')
             val = val.substr(1);
 
@@ -175,10 +167,11 @@ HttpResponse CgiHandler::validateCgiPreconditions() {
     return err;
 }
 
-// ─── executeChild ─────────────────────────────────────────
 // Child process: setup pipes, exec CGI script (never returns)
-
 void CgiHandler::executeChild(int outfd[2], int infd[2]) {
+    // Create new process group to isolate from terminal signals
+    setpgid(0, 0);
+    
     close(outfd[0]);  // close read-end of stdout pipe
     dup2(outfd[1], STDOUT_FILENO);  // redirect stdout -> pipe
     close(outfd[1]);
@@ -186,6 +179,10 @@ void CgiHandler::executeChild(int outfd[2], int infd[2]) {
     close(infd[1]); // close write-end of stdin pipe
     dup2(infd[0], STDIN_FILENO); // redirect pipe -> stdin
     close(infd[0]);
+
+    // Close all inherited FDs (listening sockets, signal pipe, etc.)
+    for (int fd = 3; fd < 1024; ++fd)
+        close(fd);
 
     char* argv[3];
     argv[0] = strdup(_cgiBinary.c_str());
@@ -218,45 +215,61 @@ void CgiHandler::sendRequestBody(int fd) {
     }
 }
 
+// Kill CGI child and return an error response
+static HttpResponse killAndReturn(int fd, pid_t pid, int code, const std::string& reason, const std::string& body) {
+    kill(pid, SIGKILL);
+    waitpid(pid, NULL, 0);
+    close(fd);
+
+    HttpResponse err;
+    err.status_code = code;
+    err.reason_phrase = reason;
+    err.body = body;
+    return err;
+}
+
 // Read CGI output with timeout, kill child if exceeded
 HttpResponse CgiHandler::readCgiOutputWithTimeout(int fd, pid_t pid) {
     std::string output;
     char buffer[4096];
-    ssize_t n;
     time_t startTime = time(NULL);
 
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+
     while (true) {
-        // check timeout
-        if (difftime(time(NULL), startTime) >= CGI_TIMEOUT) {
-            kill(pid, SIGKILL);
-            waitpid(pid, NULL, 0);
-            close(fd);
+        double elapsed = difftime(time(NULL), startTime);
+        if (elapsed >= CGI_TIMEOUT)
+            return killAndReturn(fd, pid, 504, "Gateway Timeout", "CGI script timed out");
+        if (ServerEngine::shutdownFlag)
+            return killAndReturn(fd, pid, 503, "Service Unavailable", "Server shutting down");
 
-            HttpResponse err;
-            err.status_code = 504;
-            err.reason_phrase = "Gateway Timeout";
-            err.body = "CGI script timed out";
-            return err;
-        }
+        int ms = (CGI_TIMEOUT - (int)elapsed) * 1000;
+        if (ms > 500)
+            ms = 500;
+        if (ms <= 0)
+            ms = 1;
 
-        n = read(fd, buffer, sizeof(buffer));
+        int ret = poll(&pfd, 1, ms);
+        if (ret < 0 && errno != EINTR)
+            break;
+        if (ret <= 0)
+            continue;
+
+        ssize_t n = read(fd, buffer, sizeof(buffer));
         if (n > 0)
             output.append(buffer, n);
         else if (n == 0)
-            break; // EOF
-        else {
-            if (errno == EINTR)
-                continue;
-            break; // read error
-        }
+            break;
+        else if (errno != EINTR)
+            break;
     }
     close(fd);
 
-    int status;
-    waitpid(pid, &status, 0);
-
-    // check if child exited with error
-    if (WIFEXITED(status) && WEXITSTATUS(status) != 0 && output.empty()) {
+    int status = 0;
+    pid_t wp = waitpid(pid, &status, 0);
+    if (wp > 0 && WIFEXITED(status) && WEXITSTATUS(status) != 0 && output.empty()) {
         HttpResponse err;
         err.status_code = 502;
         err.reason_phrase = "Bad Gateway";
