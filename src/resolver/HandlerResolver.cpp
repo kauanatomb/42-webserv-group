@@ -76,10 +76,8 @@ const RuntimeLocation* HandlerResolver::resolve(const RuntimeConfig& config, con
     return loc;
 }
 
-// ─── CGI path resolution ─────────────────────────────────
 // Splits req.path into SCRIPT_NAME + PATH_INFO when the location has CGI.
 // Called once after location matching — the only place that mutates the request.
-
 void HandlerResolver::resolveCgiPathInfo(HttpRequest& req, const RuntimeLocation* loc) {
     if (!loc || !loc->getHasCGI())
         return;
