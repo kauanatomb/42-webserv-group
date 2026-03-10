@@ -171,15 +171,6 @@ static std::string stripLocationPrefix(const std::string& uri, const std::string
 static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
 {
     std::string root = loc->getRoot();
-
-    //if location has its own root, treat it as "location directory"
-    if (loc->hasExplicitRoot())
-    {
-        std::string suffix = stripLocationPrefix(req.path, loc->getPath());
-        return joinPath(root, suffix);
-    }
-    //std::string suffix = stripLocationPrefix(req.path, loc->getPath());
-    //if root is inherited from server, keep the full URI path
     return joinPath(root, req.path);
 }
 
