@@ -1,8 +1,75 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>files</title></head>
-<body>
-  <h1>FILES OK 📁</h1>
-  <p>/files served from location root</p>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Files</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 700px;
+        margin: 40px auto;
+        padding: 0 20px;
+      }
+      h1 {
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 10px;
+      }
+      .autoindex {
+        list-style: none;
+        padding: 0;
+      }
+      .autoindex li {
+        padding: 6px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .autoindex a {
+        text-decoration: none;
+        color: #0366d6;
+      }
+      .autoindex a:hover {
+        text-decoration: underline;
+      }
+      .delete-btn {
+        background: none;
+        border: 1px solid #d73a49;
+        color: #d73a49;
+        cursor: pointer;
+        padding: 2px 8px;
+        margin-left: 10px;
+        border-radius: 3px;
+        font-size: 0.8em;
+      }
+      .delete-btn:hover {
+        background: #d73a49;
+        color: #fff;
+      }
+      .autoindex li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Files 📁</h1>
+    <!-- AUTOINDEX -->
+    <script>
+      document.querySelectorAll(".delete-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var path = this.getAttribute("data-path");
+          if (!confirm("Delete " + path + "?")) return;
+          var xhr = new XMLHttpRequest();
+          xhr.open("DELETE", path);
+          xhr.onload = function () {
+            if (xhr.status === 204) location.reload();
+            else alert("Error: " + xhr.status + " " + xhr.statusText);
+          };
+          xhr.onerror = function () {
+            alert("Request failed");
+          };
+          xhr.send();
+        });
+      });
+    </script>
+  </body>
 </html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Upload</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 0 20px;
+      }
+      h1 {
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 10px;
+      }
+      #msg {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .error {
+        color: #d73a49;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Upload a file</h1>
+    <form
+      id="upload-form"
+      action="/upload"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+      <input type="file" name="file" required />
+      <button type="submit">Upload</button>
+    </form>
+    <div id="msg"></div>
+    <script>
+      document
+        .getElementById("upload-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          var form = this;
+          var msg = document.getElementById("msg");
+          var data = new FormData(form);
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", form.action);
+          xhr.onload = function () {
+            if (xhr.status === 201) {
+              window.location.href = "/files";
+            } else {
+              msg.className = "error";
+              msg.textContent = "Error: " + xhr.status + " " + xhr.statusText;
+            }
+          };
+          xhr.onerror = function () {
+            msg.className = "error";
+            msg.textContent = "Upload failed";
+          };
+          xhr.send(data);
+        });
+    </script>
+  </body>
+</html>
