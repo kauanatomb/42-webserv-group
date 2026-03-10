@@ -55,7 +55,8 @@ static std::string makeUploadFilename()
 {
     unsigned long t = static_cast<unsigned long>(std::time(NULL));
     unsigned long pid = static_cast<unsigned long>(getpid());
-    return std::string("upload_") + itos_ulong(t) + "_" + itos_ulong(pid) + ".bin";
+    static unsigned long counter = 0;
+    return "upload_" + itos_ulong(t) + "_" + itos_ulong(pid) + "_" + itos_ulong(counter++) + ".bin";
 }
 static bool writeFileBinary(const std::string& filePath, const std::string& data)
 {
