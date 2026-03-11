@@ -24,8 +24,6 @@ bool Connection::isClosed() const {
 
 void Connection::onReadable() {
     (void)_keep_alive;
-    (void)_socket_key;
-    (void)_config;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
@@ -37,20 +35,14 @@ void Connection::onReadable() {
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
 
-    //if (_parser.parse(_read_buffer, _request)) {
-    //if request is not complete yet, do NOT respond
-
     if (!_parser.parse(_read_buffer, _request)) {
 
         _state = READING;
         return;
     }
 
-    //request is complete or parser error
     if (_parser.hasError()) {
         int status = _parser.getErrorStatus();
-            //(void)status; TODO remove when HttpResponse::fromStatus(status) will be ready
-        // _response = HttpResponse::fromStatus(status);
         _response = ErrorHandler::build(status, (const RuntimeLocation*)NULL);
         } else {
             _request.print();
