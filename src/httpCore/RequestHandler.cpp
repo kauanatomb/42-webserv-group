@@ -1,5 +1,6 @@
 #include "resolver/RuntimeServer.hpp"
 #include "httpCore/RequestHandler.hpp"
+#include "httpCore/UploadHandler.hpp"
 #include "resolver/RuntimeLocation.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include "httpCore/ResponseBuilder.hpp"
@@ -13,8 +14,6 @@
 #include <dirent.h>
 #include <algorithm>
 #include <sys/types.h>
-#include <fcntl.h>
-#include <ctime>
 #include <cstdio>
 
 static std::string joinPath(const std::string& a, const std::string& b)
@@ -30,99 +29,6 @@ static std::string joinPath(const std::string& a, const std::string& b)
 
 static bool hasTrailingSlash(const std::string& s) {
     return (!s.empty() && s[s.size() - 1] == '/');
-}
-
-static bool isDir(const std::string& p)
-{
-    struct stat st;
-    if (stat(p.c_str(), &st) != 0) return false;
-    return S_ISDIR(st.st_mode);
-}
-
-static bool canWriteDir(const std::string& p)
-{
-    return (access(p.c_str(), W_OK) == 0);
-}
-static std::string itos_ulong(unsigned long v)
-{
-    std::ostringstream oss;
-    oss << v;
-    return oss.str();
-}
-
-//build the file's name
-static std::string makeUploadFilename()
-{
-    unsigned long t = static_cast<unsigned long>(std::time(NULL));
-    unsigned long pid = static_cast<unsigned long>(getpid());
-    static unsigned long counter = 0;
-    return "upload_" + itos_ulong(t) + "_" + itos_ulong(pid) + "_" + itos_ulong(counter++) + ".bin";
-}
-static bool writeFileBinary(const std::string& filePath, const std::string& data)
-{
-    int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (fd < 0)
-        return false;
-    
-    const char* buf = data.c_str();
-    size_t total = data.size();
-    size_t off = 0;
-    while (off < total)
-    {
-        ssize_t n = write(fd, buf + off, total - off);
-        if (n < 0)
-        {
-            if (errno == EINTR) continue;
-            close(fd);
-            return false;
-        }
-        off += static_cast<size_t>(n);
-    }
-    close(fd);
-    return true;
-}
-
-static HttpResponse handlePOST(const HttpRequest& req, const RuntimeLocation* loc)
-{
-    //1- 413 check (only if max > 0)
-    size_t maxBody = loc->getClientMaxBodySize();
-    if (maxBody > 0 && req.body.size() > maxBody)
-        return ErrorHandler::build(413, loc);
-
-    //2- upload enabled?
-    if (!loc->getHasUpload())
-        return ErrorHandler::build(501, loc);
-
-    //3- validate upload_store
-    const std::string& store = loc->getUploadStore();
-    if (store.empty())
-        return ErrorHandler::build(500, "upload_store not configured\n", loc);
-    
-    if (!isDir(store))
-        return ErrorHandler::build(500, "upload_store is not a directory\n", loc);
-    
-    if (!canWriteDir(store))
-        return ErrorHandler::build(403, "upload_store not writable\n", loc);
-    
-    // 4- write file
-    std::string filename = makeUploadFilename();
-    std::string fullPath = joinPath(store, filename);
-
-    if (!writeFileBinary(fullPath, req.body))
-        return ErrorHandler::build(500, "failed to write upload file\n", loc);
-    //5- return 201 created 
-    HttpResponse res;
-    res.status_code = 201;
-    res.reason_phrase = "Created";
-    res.headers["Content-Type"] = "text/plain";
-
-    //put it under the same URIpath
-    //depending on routing may not be directly retrievable
-    //std::string base = req.path;
-    //if (!hasTrailingSlash(base)) base += "/";
-    res.headers["Location"] = "/uploads/" + filename;
-    res.body = "Created\n";
-    return res;
 }
 
 static bool methodFromString (const std::string& s, HttpMethod& out)
@@ -156,7 +62,6 @@ static bool isDirectory(const std::string& path)
     return S_ISDIR(st.st_mode);
 }
 
-
 static std::string stripLocationPrefix(const std::string& uri, const std::string& locPath)
 {
     //uri starts with locPath, matchLocation() guarantee
@@ -167,12 +72,11 @@ static std::string stripLocationPrefix(const std::string& uri, const std::string
     return uri.substr(locPath.size()); // starts with /
 }
 
-
-
 static std::string resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
 {
     std::string root = loc->getRoot();
-    return joinPath(root, req.path);
+    std::string suffix = stripLocationPrefix(req.path, loc->getPath());
+    return joinPath(root, suffix);
 }
 
 static HttpResponse handleDELETE(const HttpRequest& req, const RuntimeLocation* loc)
@@ -200,7 +104,6 @@ static HttpResponse handleDELETE(const HttpRequest& req, const RuntimeLocation* 
     res.body = "";
     //content-length should become 0 automatically in serialize()
     return res;
-
 }
 
 static std::string joinUri(const std::string& base, const std::string& name)
@@ -229,27 +132,24 @@ static std::string htmlEscape(const std::string& s)
     return out;
 }
 
-static HttpResponse buildAutoindex (const std::string& dirPath, const std::string& uriBase, const RuntimeLocation* loc)
+static std::string buildFileList(const std::string& dirPath, const std::string& uriBase,
+                                 const std::string& excludeFile)
 {
     DIR* d = opendir(dirPath.c_str());
-    if (!d)
-        return ErrorHandler::build(403, loc);
+    if (!d) return "";
 
     std::vector<std::string> entries;
     for (struct dirent* ent = readdir(d); ent; ent = readdir(d))
     {
         std::string name = ent->d_name;
-        if (name != "." && name != "..")
+        if (name != "." && name != ".." && name != excludeFile)
             entries.push_back(name);
     }
     closedir(d);
     std::sort(entries.begin(), entries.end());
 
     std::ostringstream out;
-    out << "<!doctype html><html><head><meta charset=\"utf-8\">"
-        << "<title>Index of " << htmlEscape(uriBase) << "</title></head><body>"
-        << "<h1>Index of " << htmlEscape(uriBase) << "</h1><ul>";
-
+    out << "<ul class=\"autoindex\">";
     for (size_t i = 0; i < entries.size(); ++i)
     {
         std::string name = entries[i];
@@ -261,12 +161,58 @@ static HttpResponse buildAutoindex (const std::string& dirPath, const std::strin
             name += "/";
         }
         out << "<li><a href=\"" << htmlEscape(href) << "\">"
-            << htmlEscape(name) << "</a></li>";
+            << htmlEscape(name) << "</a>"
+            << " <button class=\"delete-btn\" data-path=\"" << htmlEscape(href)
+            << "\">&#x2716;</button></li>";
     }
-    
-    out << "</ul></body></html>\n";
+    out << "</ul>";
+    return out.str();
+}
 
-    //serve as HTML
+static std::string readFileToString(const std::string& path)
+{
+    std::ifstream in(path.c_str(), std::ios::in | std::ios::binary);
+    if (!in.is_open()) return "";
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+static HttpResponse buildAutoindex(const std::string& dirPath, const std::string& uriBase,
+                                    const RuntimeLocation* loc, const std::string& indexPath)
+{
+    // extract the index filename to exclude it from the listing
+    std::string excludeFile;
+    if (!indexPath.empty())
+    {
+        size_t slash = indexPath.rfind('/');
+        excludeFile = (slash != std::string::npos) ? indexPath.substr(slash + 1) : indexPath;
+    }
+
+    std::string fileList = buildFileList(dirPath, uriBase, excludeFile);
+    if (fileList.empty())
+        return ErrorHandler::build(403, loc);
+
+    // if an index template with <!-- AUTOINDEX --> exists, inject the list there
+    if (!indexPath.empty())
+    {
+        std::string tpl = readFileToString(indexPath);
+        std::string marker = "<!-- AUTOINDEX -->";
+        size_t pos = tpl.find(marker);
+        if (pos != std::string::npos)
+        {
+            std::string page = tpl.substr(0, pos) + fileList + tpl.substr(pos + marker.size());
+            return ResponseBuilder::ok(page, ".html");
+        }
+    }
+
+    // fallback: plain generated page
+    std::ostringstream out;
+    out << "<!doctype html><html><head><meta charset=\"utf-8\">"
+        << "<title>Index of " << htmlEscape(uriBase) << "</title></head><body>"
+        << "<h1>Index of " << htmlEscape(uriBase) << "</h1>"
+        << fileList
+        << "</body></html>\n";
     return ResponseBuilder::ok(out.str(), ".html");
 }
 
@@ -286,22 +232,29 @@ static HttpResponse serveRegularFile(const std::string& filePath, const RuntimeL
 
 static HttpResponse serveDirectory(const std::string& dirPath, const HttpRequest& req, const RuntimeLocation* loc)
 {
-    // try index file first
+    std::string uriBase = req.path;
+    if (!hasTrailingSlash(uriBase)) uriBase += "/";
+
+    // find index file candidate
+    std::string indexPath;
     const std::vector<std::string>& idx = loc->getIndex();
     if (!idx.empty())
     {
         struct stat st;
         std::string candidate = joinPath(dirPath, idx[0]);
         if (stat(candidate.c_str(), &st) == 0 && S_ISREG(st.st_mode))
-            return serveRegularFile(candidate, loc);
+            indexPath = candidate;
     }
-    // fallback to autoindex
-    if (!loc || !loc->getAutoindex())
-        return ErrorHandler::build(403, "Directory listing denied\n", loc);
 
-    std::string uriBase = req.path;
-    if (!hasTrailingSlash(uriBase)) uriBase += "/";
-    return buildAutoindex(dirPath, uriBase, loc);
+    // if autoindex is on, generate listing (using template if available)
+    if (loc && loc->getAutoindex())
+        return buildAutoindex(dirPath, uriBase, loc, indexPath);
+
+    // autoindex off: serve static index if it exists
+    if (!indexPath.empty())
+        return serveRegularFile(indexPath, loc);
+
+    return ErrorHandler::build(403, "Directory listing denied\n", loc);
 }
 
 static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest& req, const RuntimeLocation* loc)
@@ -317,7 +270,6 @@ static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest&
 }
 
 HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocation* loc) {
-
     //1-redirection handling (return directive) 
     if (loc->getHasReturn()) {
         const ReturnRule& r = loc->getRedirect();
@@ -335,15 +287,13 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
     // 3- resolve filesystem path
     if (req.method == "GET")
     {   
-        //build base path (no index)
         std::string basePath = resolvePath(req, loc);
         return serveFileGET(basePath, req, loc);
     }
     
-    if (req.method == "POST") return handlePOST(req, loc);
+    if (req.method == "POST") return UploadHandler::handle(req, loc);
 
     if (req.method == "DELETE") return handleDELETE(req, loc);
 
     return ErrorHandler::build(501, "Fallback\n", loc);
 }
-
