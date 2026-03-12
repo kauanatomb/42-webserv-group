@@ -18,7 +18,8 @@ INFILE = 	src/main.cpp src/config/ConfigLoader.cpp src/config/Tokenizer.cpp \
 			src/resolver/HandlerResolver.cpp \
 			src/resolver/RuntimeServer.cpp src/resolver/RuntimeLocation.cpp \
 			src/network/Connection.cpp src/network/ServerEngine.cpp \
-			src/httpCore/RequestHandler.cpp src/httpCore/HttpResponse.cpp \
+			src/httpCore/RequestHandler.cpp src/httpCore/UploadHandler.cpp \
+			src/httpCore/HttpResponse.cpp \
 			src/httpCore/ErrorHandler.cpp src/httpCore/ResponseBuilder.cpp \
 			src/httpCore/HttpRequest.cpp src/httpCore/RequestParser.cpp \
 			src/httpCore/CgiHandler.cpp

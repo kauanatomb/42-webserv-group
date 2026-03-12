@@ -45,15 +45,20 @@ void Connection::onReadable() {
 
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
-    if (_parser.parse(_read_buffer, _request)) {
-        if (_parser.hasError()) {
-            int status = _parser.getErrorStatus();
-            (void)status; // TODO remove when HttpResponse::fromStatus(status) will be ready
-            // _response = HttpResponse::fromStatus(status);
-        } else {
-            processRequest();
-        }
+
+    if (!_parser.parse(_read_buffer, _request)) {
+
+        _state = READING;
+        return;
     }
+
+    if (_parser.hasError()) {
+        int status = _parser.getErrorStatus();
+        _response = ErrorHandler::build(status, (const RuntimeLocation*)NULL);
+    } else {
+        processRequest();
+    }
+    
     _write_buffer = _response.serialize();
     _state = WRITING;
 }
