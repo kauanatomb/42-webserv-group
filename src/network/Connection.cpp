@@ -2,6 +2,7 @@
 #include "resolver/HandlerResolver.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include <sys/socket.h>
+#include <netinet/in.h>
 # include "httpCore/RequestHandler.hpp"
 # include <string>
 
@@ -22,8 +23,18 @@ bool Connection::isClosed() const {
     return _state == CLOSED;
 }
 
+void Connection::processRequest() {
+    const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request, _socket_fd);
+    _request.print();
+    if (!loc) {
+        _response = ErrorHandler::build(500, "Resolver returned NULL location \n", loc);
+        return;
+    }
+    RequestHandler handler;
+    _response = handler.handle(_request, loc);
+}
+
 void Connection::onReadable() {
-    (void)_keep_alive;
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
@@ -44,22 +55,16 @@ void Connection::onReadable() {
     if (_parser.hasError()) {
         int status = _parser.getErrorStatus();
         _response = ErrorHandler::build(status, (const RuntimeLocation*)NULL);
-        } else {
-            _request.print();
-            const RuntimeLocation* loc = HandlerResolver::resolve(_config, _socket_key, _request);
-            if (!loc) {
-                _response = ErrorHandler::build(500, "Resolver returned NULL location \n", (const RuntimeLocation*)NULL);
-            } else {
-                RequestHandler handler;
-                _response = handler.handle(_request, loc);
-            }
-        }
+    } else {
+        processRequest();
+    }
     
     _write_buffer = _response.serialize();
     _state = WRITING;
 }
 
 void Connection::onWritable() {
+    (void)_keep_alive;
     ssize_t bytes = send(_socket_fd, _write_buffer.c_str(), _write_buffer.size(), 0);
     if (bytes <= 0) {
         _state = CLOSED;

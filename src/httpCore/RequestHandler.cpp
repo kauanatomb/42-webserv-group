@@ -1,6 +1,7 @@
 #include "resolver/RuntimeServer.hpp"
 #include "httpCore/RequestHandler.hpp"
 #include "httpCore/UploadHandler.hpp"
+#include "httpCore/CgiHandler.hpp"
 #include "resolver/RuntimeLocation.hpp"
 #include "httpCore/ErrorHandler.hpp"
 #include "httpCore/ResponseBuilder.hpp"
@@ -322,7 +323,7 @@ static HttpResponse serveFileGET(const std::string& basePath, const HttpRequest&
     struct stat st;
     if (stat(basePath.c_str(), &st) != 0)
         return ErrorHandler::build(404, loc);
-
+    
     if (S_ISDIR(st.st_mode))
         return serveDirectory(basePath, req, loc);
 
@@ -342,16 +343,20 @@ HttpResponse RequestHandler::handle(const HttpRequest& req, const RuntimeLocatio
     if (methodErr == 501)
         return ErrorHandler::build(501, loc);
     if (methodErr == 405)
-    return ErrorHandler::build405(loc->getAllowedMethods(), loc);
+        return ErrorHandler::build405(loc->getAllowedMethods(), loc);
 
     // 3- resolve filesystem path
+    std::string fsPath = resolvePath(req, loc);
+    if (fsPath.empty())
+        return ErrorHandler::build(400, loc);
+
+    // 4- CGI takes priority: any method is delegated to the script
+    if (loc->getHasCGI() && CgiHandler::matchCgiExtension(fsPath, loc))
+        return CgiHandler(req, fsPath, loc).execute();
+
+    // 5- static file handling per method
     if (req.method == "GET")
-    {   
-        std::string basePath = resolvePath(req, loc);
-        if (basePath.empty())
-            return ErrorHandler::build(400, loc);
-        return serveFileGET(basePath, req, loc);
-    }
+        return serveFileGET(fsPath, req, loc);
     
     if (req.method == "POST") return UploadHandler::handle(req, loc);
 

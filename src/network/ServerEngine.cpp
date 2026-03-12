@@ -9,8 +9,10 @@
 #include <csignal>
 #include <iostream>
 #include <errno.h>
+#include <sys/wait.h>
 
 int ServerEngine::_signalPipe[2] = {-1, -1};
+volatile sig_atomic_t ServerEngine::shutdownFlag = 0;
 
 ServerEngine::ServerEngine(const RuntimeConfig& config) : _config(config) {}
 
@@ -20,6 +22,7 @@ ServerEngine::~ServerEngine() {
 
 void ServerEngine::signalHandler(int signum) {
     (void)signum;
+    shutdownFlag = 1;
     char c = 'x';
     write(_signalPipe[1], &c, 1);
 }
@@ -31,11 +34,14 @@ void ServerEngine::setupSignalHandling() {
     fcntl(_signalPipe[1], F_SETFL, O_NONBLOCK);
 
     struct sigaction sa;
+    std::memset(&sa, 0, sizeof(sa));
     sa.sa_handler = signalHandler;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_RESTART;
+
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+
     signal(SIGPIPE, SIG_IGN);
 
     pollfd pfd;
@@ -116,12 +122,7 @@ void ServerEngine::setupSocket(const SocketKey& key) {
         close(fd);
         throw RuntimeError("listen() failed");
     }
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        close(fd);
-        throw RuntimeError("fcntl F_GETFL failed");
-    }
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
         close(fd);
         throw RuntimeError("fcntl O_NONBLOCK failed");
     }
