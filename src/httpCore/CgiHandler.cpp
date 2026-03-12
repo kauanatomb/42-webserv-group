@@ -251,9 +251,7 @@ HttpResponse CgiHandler::readCgiOutputWithTimeout(int fd, pid_t pid) {
         ssize_t n = read(fd, buffer, sizeof(buffer));
         if (n > 0)
             output.append(buffer, n);
-        else if (n == 0)
-            break;
-        else if (errno != EINTR)
+        else
             break;
     }
     close(fd);

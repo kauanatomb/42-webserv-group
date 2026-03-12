@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ctime>
-#include <cerrno>
 #include <cctype>
 
 static std::string itos_ulong(unsigned long v)
