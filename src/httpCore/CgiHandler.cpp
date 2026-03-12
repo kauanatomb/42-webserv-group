@@ -151,6 +151,8 @@ HttpResponse CgiHandler::parseCgiOutput(const std::string& out) {
 int CgiHandler::validateCgiPreconditions() {
     struct stat st;
 
+    if (_req.body.size() > _loc->getClientMaxBodySize())
+        return 413;
     if (stat(_scriptPath.c_str(), &st) < 0 || !S_ISREG(st.st_mode))
         return 404;
     if (stat(_cgiBinary.c_str(), &st) < 0)
