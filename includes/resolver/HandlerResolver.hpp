@@ -8,9 +8,12 @@ class HandlerResolver {
         static const RuntimeLocation* resolve(
             const RuntimeConfig& config,
             const SocketKey& socket_key,
-            const HttpRequest& req
+            HttpRequest& req,
+            int socket_fd
         );
     
     private:
         static std::string extractHostname(const std::string& host_header);
+        static void resolveCgiPathInfo(HttpRequest& req, const RuntimeLocation* loc);
+        static void fillRequestMeta(HttpRequest& req, const SocketKey& socket_key, int socket_fd);
 };

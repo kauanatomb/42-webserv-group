@@ -14,7 +14,14 @@ static std::string guessContentType(const std::string& path)
     if (endsWith(path, ".png")) return "image/png";
     if (endsWith(path, ".jpg") || endsWith(path, ".jpeg")) return "image/jpeg";
     if (endsWith(path, ".gif")) return "image/gif";
-    return "text/plain";
+    if (endsWith(path, ".pdf")) return "application/pdf";
+    if (endsWith(path, ".json")) return "application/json";
+    if (endsWith(path, ".xml")) return "application/xml";
+    if (endsWith(path, ".txt")) return "text/plain";
+    if (endsWith(path, ".svg")) return "image/svg+xml";
+    if (endsWith(path, ".ico")) return "image/x-icon";
+    if (endsWith(path, ".bin")) return "application/octet-stream";
+    return "application/octet-stream";
 }
 
 HttpResponse ResponseBuilder::ok(const std::string& body, const std::string& path) {

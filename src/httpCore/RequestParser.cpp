@@ -110,6 +110,15 @@ bool RequestParser::parseStartLine(std::string& buffer, HttpRequest& request)
     } else {
         request.path = request.uri;
     }
+    // collapse consecutive slashes  (e.g. //foo -> /foo)
+    std::string& p = request.path;
+    size_t w = 0;
+    for (size_t r = 0; r < p.size(); ++r) {
+        if (p[r] == '/' && w > 0 && p[w - 1] == '/')
+            continue;
+        p[w++] = p[r];
+    }
+    p.resize(w);
     return (true);
 }
 

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Who Are You? | CGI Form</title>
+    <link rel="stylesheet" href="/cgi-bin/form.css" />
+  </head>
+  <body>
+    <main class="card">
+      <h1>Who are you?</h1>
+      <p>
+        Tell us a bit about yourself. This form sends a POST request to your CGI
+        script.
+      </p>
+
+      <form method="POST" action="/cgi-bin/post_echo.py">
+        <div class="row">
+          <div>
+            <label for="name">Your name</label>
+            <input
+              id="name"
+              name="name"
+              placeholder="e.g. Alice Johnson"
+              required
+            />
+          </div>
+          <div>
+            <label for="city">Your city</label>
+            <input id="city" name="city" placeholder="e.g. Paris" required />
+          </div>
+        </div>
+
+        <div>
+          <label for="role">What do you do?</label>
+          <input
+            id="role"
+            name="role"
+            placeholder="e.g. Student, Engineer, Designer"
+          />
+        </div>
+
+        <div>
+          <label for="about">A short introduction</label>
+          <textarea
+            id="about"
+            name="about"
+            rows="4"
+            placeholder="I am..."
+          ></textarea>
+        </div>
+
+        <button type="submit">Send My Profile</button>
+      </form>
+    </main>
+  </body>
+</html>
