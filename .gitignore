@@ -1,0 +1,7 @@
+# Ignore object files
+obj/
+*.o
+
+# Ignore executables
+webserv
+*.exe

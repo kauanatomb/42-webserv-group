@@ -5,6 +5,7 @@
 #include "resolver/RuntimeLocation.hpp"
 #include <vector>
 #include <string>
+#include <sys/types.h>
 
 class CgiHandler {
     public:
