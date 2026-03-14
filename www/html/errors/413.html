@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>404 Not Found</title>
+    <title>413 Payload Too Large</title>
     <style>
       body {
         margin: 0;
@@ -40,6 +40,8 @@
       p {
         color: #9ca3af;
         line-height: 1.6;
+        margin: 0 auto 10px;
+        max-width: 560px;
       }
 
       a {
@@ -59,11 +61,15 @@
   </head>
   <body>
     <main class="card">
-      <div class="code">404</div>
-      <h1>Page Not Found</h1>
+      <div class="code">413</div>
+      <h1>Payload Too Large</h1>
       <p>
-        The requested path does not exist on this server. Check the URL or return
-        to the control panel.
+        The request body exceeds the maximum size allowed by this server
+        configuration.
+      </p>
+      <p>
+        Try sending a smaller file or reduce the request payload before trying
+        again.
       </p>
       <a href="/">Return to Control Panel</a>
     </main>

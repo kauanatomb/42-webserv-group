@@ -1,8 +1,195 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>webserv home</title></head>
-<body>
-  <h1>HOME OK ✅</h1>
-  <p>/ served from server root</p>
-</body>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Webserv Control Panel</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #111827;
+        --panel-2: #0f172a;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --accent: #34d399;
+        --accent-soft: rgba(52, 211, 153, 0.12);
+        --danger: #f87171;
+        --border: rgba(52, 211, 153, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, #0b1016 0%, #0d1117 100%);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 48px 20px 64px;
+      }
+
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-family: "Courier New", monospace;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0 0 14px;
+        font-size: 2.4rem;
+        line-height: 1.1;
+      }
+
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 760px;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+      }
+
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 1.15rem;
+      }
+
+      .card p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        min-height: 66px;
+      }
+
+      .links {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn {
+        display: inline-block;
+        text-decoration: none;
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        transition: 0.2s ease;
+      }
+
+      .btn:hover {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .btn-danger {
+        border-color: rgba(248, 113, 113, 0.45);
+      }
+
+      .btn-danger:hover {
+        background: rgba(248, 113, 113, 0.12);
+        border-color: var(--danger);
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <div class="eyebrow">C++98 HTTP Server Demo</div>
+        <h1>Webserv Control Panel</h1>
+        <p>
+          A browser-based demo for our custom web server. Use this interface to
+          explore static serving, uploads, directory listing, CGI execution,
+          redirects, and custom error handling.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Static & Navigation</h2>
+          <p>
+            Open the main site, test a redirect, and trigger a custom 404 page.
+          </p>
+          <div class="links">
+            <a class="btn" href="/old">Test Redirect</a>
+            <a class="btn btn-danger" href="/this-page-does-not-exist">Trigger 404</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>File Vault</h2>
+          <p>
+            Browse directory listing, inspect files, and test DELETE directly
+            from the browser.
+          </p>
+          <div class="links">
+            <a class="btn" href="/files/">Open File Vault</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Upload Payload</h2>
+          <p>
+            Send a file with POST and return to the vault after a successful
+            upload.
+          </p>
+          <div class="links">
+            <a class="btn" href="/upload">Open Upload Page</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>CGI Playground</h2>
+          <p>
+            Test CGI with GET, query strings, POST body handling, and timeout
+            behavior.
+          </p>
+          <div class="links">
+            <a class="btn" href="#" onclick="return false;" style="opacity: 0.55; cursor: default;">Coming Soon</a>
+          </div>
+        </article>
+      </section>
+
+      <footer>
+        Built for browser testing and live correction demos.
+      </footer>
+    </main>
+  </body>
 </html>
