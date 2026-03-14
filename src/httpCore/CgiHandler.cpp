@@ -10,6 +10,7 @@
 #include <sstream>
 #include <sys/stat.h>
 #include <poll.h>
+#include <errno.h>
 
 static std::string takeBinary(std::string path, const RuntimeLocation* loc) {
     size_t pos = path.rfind(".");
