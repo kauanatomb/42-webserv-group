@@ -169,16 +169,13 @@ void ServerEngine::handlePollEvent(size_t index) {
     Connection& conn = it->second;
     if (pfd.revents & POLLIN)
         conn.onReadable();
-    if (pfd.revents & POLLOUT)
+    if ((pfd.revents & POLLOUT) && conn.wantsWrite())
         conn.onWritable();
     if (conn.isClosed()) {
         closeConnection(pfd.fd);
         return;
     }
-    if (conn.wantsWrite())
-        pfd.events = POLLOUT;
-    else
-        pfd.events = POLLIN;
+    pfd.events = POLLIN | POLLOUT;
 }
 
 bool ServerEngine::getSocketKey(int fd, SocketKey& key) const {
@@ -201,7 +198,7 @@ void ServerEngine::acceptConnection(int serverFd) {
     _connections.insert(std::make_pair(clientFd, Connection(clientFd, _config, key)));
     pollfd pfd;
     pfd.fd = clientFd;
-    pfd.events = POLLIN;
+    pfd.events = POLLIN | POLLOUT;
     pfd.revents = 0;
     _pollfds.push_back(pfd);
 }

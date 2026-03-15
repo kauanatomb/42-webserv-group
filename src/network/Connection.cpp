@@ -38,10 +38,12 @@ void Connection::onReadable() {
     char buffer[4096];
     ssize_t bytes = recv(_socket_fd, buffer, sizeof(buffer), 0);
 
-    if (bytes <= 0) {
+    if (bytes == 0) {
         _state = CLOSED;
         return;
     }
+    if (bytes < 0)
+        return;
 
     _read_buffer.append(buffer, bytes);
     _state = PARSING;
@@ -65,11 +67,16 @@ void Connection::onReadable() {
 
 void Connection::onWritable() {
     (void)_keep_alive;
+    if (_write_buffer.empty())
+        return;
+
     ssize_t bytes = send(_socket_fd, _write_buffer.c_str(), _write_buffer.size(), 0);
-    if (bytes <= 0) {
+    if (bytes == 0) {
         _state = CLOSED;
         return;
     }
+    if (bytes < 0)
+        return;
 
     _write_buffer.erase(0, bytes);
 
