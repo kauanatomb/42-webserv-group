@@ -1,12 +1,13 @@
 :root {
-  --bg-1: #f8f6ef;
-  --bg-2: #e7efe4;
-  --card: #fffdf8;
-  --ink: #1f2933;
-  --muted: #52606d;
-  --accent: #0b7285;
-  --accent-2: #087f5b;
-  --line: #d9e2ec;
+  --bg: #0d1117;
+  --card: #111827;
+  --ink: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #34d399;
+  --accent-dim: rgba(52, 211, 153, 0.25);
+  --danger: #f87171;
+  --input-bg: #1a2233;
+  --line: rgba(52, 211, 153, 0.1);
 }
 
 * {
@@ -16,34 +17,34 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: Arial, sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 20% 15%, #ffffff 0%, transparent 40%),
-    linear-gradient(135deg, var(--bg-1), var(--bg-2));
+  background: var(--bg);
   display: grid;
   place-items: center;
   padding: 24px;
 }
 
 .card {
-  width: min(680px, 100%);
+  width: min(580px, 100%);
   background: var(--card);
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-dim);
   border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 18px 40px rgba(31, 41, 51, 0.08);
+  padding: 40px 28px;
 }
 
 h1 {
-  margin: 0 0 8px;
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  line-height: 1.15;
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  text-align: center;
 }
 
 p {
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+  font-size: 0.9rem;
 }
 
 h2 {
@@ -53,28 +54,38 @@ h2 {
 
 form {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 label {
-  font-size: 0.95rem;
-  font-weight: 700;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
 }
 
 input,
 textarea {
   width: 100%;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
+  padding: 11px 14px;
+  border: 1px solid var(--accent-dim);
   border-radius: 10px;
-  background: #fff;
+  background: var(--input-bg);
   color: var(--ink);
   font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #4b5563;
 }
 
 input:focus,
 textarea:focus {
-  outline: 2px solid color-mix(in srgb, var(--accent) 40%, white);
+  outline: none;
   border-color: var(--accent);
 }
 
@@ -85,19 +96,21 @@ textarea:focus {
 }
 
 button {
-  margin-top: 6px;
-  border: 0;
+  margin-top: 4px;
+  border: none;
   border-radius: 10px;
   padding: 12px 16px;
   font: inherit;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--bg);
+  background: var(--accent);
   cursor: pointer;
+  transition: opacity 0.2s;
 }
 
 button:hover {
-  filter: brightness(1.05);
+  opacity: 0.85;
 }
 
 .meta {
@@ -113,10 +126,10 @@ button:hover {
 table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-dim);
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: var(--input-bg);
 }
 
 th,
@@ -127,36 +140,52 @@ td {
 }
 
 th {
-  background: #f2f6f8;
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  font-size: 0.9rem;
 }
 
 pre {
   margin: 0;
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--accent-dim);
   border-radius: 10px;
-  background: #fff;
+  background: var(--input-bg);
+  color: var(--ink);
   white-space: pre-wrap;
   word-break: break-word;
+  font-size: 0.9rem;
 }
 
 .actions {
   margin-top: 18px;
+  text-align: center;
 }
 
 .button-link {
   display: inline-block;
   text-decoration: none;
   border-radius: 10px;
-  padding: 11px 14px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  border: 1px solid var(--accent-dim);
+  transition: border-color 0.2s;
+}
+
+.button-link:hover {
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {
   .card {
-    padding: 20px;
+    padding: 24px 18px;
   }
 
   .row {
