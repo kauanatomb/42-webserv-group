@@ -20,6 +20,8 @@ class ServerEngine {
         // poll descriptors
         std::vector<pollfd> _pollfds;
 
+        std::map<int, int> _cgiToSocket; // pipe_fd → socket_fd of Connection
+
         // Self-pipe for signal handling
         static int _signalPipe[2];
 
@@ -28,7 +30,7 @@ class ServerEngine {
         void setupSignalHandling();
 
         void eventLoop();
-        void handlePollEvent(size_t index);
+        void handlePollEvent(int fd, short revents);
 
         bool getSocketKey(int fd, SocketKey& key) const;
         void acceptConnection(int serverFd);
@@ -36,6 +38,19 @@ class ServerEngine {
         void cleanup();
 
         static void signalHandler(int signum);
+
+        void closeCgi(Connection& conn);
+        void rebuildPollfds();
+        void registerCgi(int socketFd, int stdinFd, int stdoutFd);
+        void unregisterCgi(int stdinFd, int stdoutFd);
+
+        void checkTimeouts();
+
+        enum {
+            POLL_TICK_MS = 500,
+            CONN_IDLE_TIMEOUT_SEC = 30,
+            CGI_TIMEOUT_SEC = 10
+        };
 
     public:
         static volatile sig_atomic_t shutdownFlag;
