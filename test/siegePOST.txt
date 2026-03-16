@@ -1,0 +1,3 @@
+http://localhost:8080/cgi-bin/post_echo.py POST {"name":"test","value":42}
+http://localhost:8080/cgi-bin/post_echo.py POST username=kauan&password=123
+http://localhost:8080/upload POST filename=test.txt&content=helloworld
