@@ -98,7 +98,7 @@ bool RequestParser::parseStartLine(std::string& buffer, HttpRequest& request)
     std::istringstream iss(bufferSection);
     iss >> request.method >> request.uri >> request.version;
     if (!checkMethod(request.method))
-        return (setErrorInfo(ERROR, 405, true), true); 
+        return (setErrorInfo(ERROR, 501, true), true); 
     if (!checkURI(request.uri))
         return (setErrorInfo(ERROR, 400, true), true);
     if (!checkVersion(request.version))
