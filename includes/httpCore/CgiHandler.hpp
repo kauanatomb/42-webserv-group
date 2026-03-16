@@ -3,6 +3,7 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "resolver/RuntimeLocation.hpp"
+#include "network/Connection.hpp"
 #include <vector>
 #include <string>
 #include <sys/types.h>
@@ -13,9 +14,10 @@ class CgiHandler {
         static bool matchCgiExtension(const std::string& fsPath, const RuntimeLocation* loc);
         HttpResponse execute();
 
-    private:
-        static const int CGI_TIMEOUT = 5; // seconds
+        CgiState launch();
+        static HttpResponse parseCgiOutput(const std::string& out);
 
+    private:
         const HttpRequest& _req;
         const RuntimeLocation* _loc;
         std::string _scriptPath;
@@ -24,9 +26,6 @@ class CgiHandler {
         // helpers
         char** buildEnv();
         void freeEnv(char** envp);
-        HttpResponse parseCgiOutput(const std::string& out);
         int validateCgiPreconditions();
         void executeChild(int outfd[2], int infd[2]);
-        void sendRequestBody(int fd);
-        HttpResponse readCgiOutputWithTimeout(int fd, pid_t pid);
 };

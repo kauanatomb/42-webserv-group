@@ -120,3 +120,86 @@ void HandlerResolver::resolveCgiPathInfo(HttpRequest& req, const RuntimeLocation
         }
     }
 }
+
+static std::string normalizePath(const std::string& path)
+{
+    std::vector<std::string> components;
+    bool isAbsolute = (!path.empty() && path[0] == '/');
+    std::string segment;
+    for (size_t i = (isAbsolute ? 1 : 0); i <= path.size(); ++i)
+    {
+        if (i == path.size() || path[i] == '/')
+        {
+            if (segment == "..") {
+                if (!components.empty()) components.pop_back();
+            } else if (segment != "." && !segment.empty()) {
+                components.push_back(segment);
+            }
+            segment.clear();
+        }
+        else
+            segment += path[i];
+    }
+    std::string result;
+    if (isAbsolute) result = "/";
+    for (size_t i = 0; i < components.size(); ++i)
+    {
+        if (i > 0) result += "/";
+        result += components[i];
+    }
+    return result.empty() ? (isAbsolute ? "/" : ".") : result;
+}
+
+std::string HandlerResolver::joinPath(const std::string& a, const std::string& b)
+{
+    if (a.empty()) return b;
+    if (b.empty()) return a;
+    if (a[a.size() - 1] == '/' && b[0] == '/')
+        return a + b.substr(1);
+    if (a[a.size() - 1] != '/' && b[0] != '/')
+        return a + "/" + b;
+    return a + b;
+}
+
+static std::string stripLocationPrefix(const std::string& uri, const std::string& locPath)
+{
+    //uri starts with locPath, matchLocation() guarantee
+    if (locPath == "/")
+        return uri; // keep as is
+    if (uri.size() == locPath.size())
+        return "/"; //exact match
+    return uri.substr(locPath.size()); // starts with /
+}
+
+std::string HandlerResolver::resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
+{
+    std::string root = loc->getRoot();
+    std::string suffix = stripLocationPrefix(req.path, loc->getPath());
+    std::string raw = joinPath(root, suffix);
+
+    // Get canonical absolute root (root must exist — it's from config)
+    char buf[PATH_MAX];
+    if (realpath(root.c_str(), buf) == NULL)
+        return "";
+    std::string absRoot(buf);
+
+    // Make raw path absolute for normalization
+    std::string absRaw = raw;
+    if (raw.empty() || raw[0] != '/')
+    {
+        char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof(cwd)) == NULL)
+            return "";
+        absRaw = std::string(cwd) + "/" + raw;
+    }
+
+    std::string normalized = normalizePath(absRaw);
+
+    // Traversal check: normalized path must be inside absRoot
+    if (normalized.size() < absRoot.size() ||
+        normalized.compare(0, absRoot.size(), absRoot) != 0 ||
+        (normalized.size() > absRoot.size() && normalized[absRoot.size()] != '/'))
+        return "";
+
+    return normalized;
+}
