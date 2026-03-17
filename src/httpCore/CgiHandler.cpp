@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include <fcntl.h>
+#include <cctype>
 
 static std::string takeBinary(std::string path, const RuntimeLocation* loc) {
     size_t pos = path.rfind(".");
@@ -50,6 +51,7 @@ char** CgiHandler::buildEnv() {
     std::vector<std::string> env;
 
     env.push_back("AUTH_TYPE=");
+    env.push_back("REDIRECT_STATUS=200");
     env.push_back("REQUEST_METHOD=" + _req.method);
     env.push_back("QUERY_STRING=" + _req.query);
     env.push_back("SCRIPT_NAME=" + _req.path);
@@ -72,10 +74,30 @@ char** CgiHandler::buildEnv() {
     std::string cl = _req.getHeader("Content-Length");
     if (!cl.empty())
         env.push_back("CONTENT_LENGTH=" + cl);
+    else if (!_req.body.empty())
+        env.push_back("CONTENT_LENGTH=" + intToStr(_req.body.size()));
 
     std::string host = _req.getHeader("Host");
     if (!host.empty())
         env.push_back("SERVER_NAME=" + host);
+
+    // Forward all HTTP headers as HTTP_* meta-variables (RFC 3875 4.1.18)
+    for (std::map<std::string, std::string>::const_iterator it = _req.headers.begin();
+            it != _req.headers.end(); ++it) {
+        std::string name = it->first;
+        // Content-Type and Content-Length are passed without HTTP_ prefix
+        if (name == "Content-Type" || name == "Content-Length")
+            continue;
+        // Convert header name: uppercase, replace '-' with '_', prepend HTTP_
+        std::string var = "HTTP_";
+        for (size_t i = 0; i < name.size(); ++i) {
+            if (name[i] == '-')
+                var += '_';
+            else
+                var += static_cast<char>(std::toupper(name[i]));
+        }
+        env.push_back(var + "=" + it->second);
+    }
 
     char** envp = new char*[env.size() + 1];
     for (size_t i = 0; i < env.size(); ++i)
@@ -178,6 +200,11 @@ void CgiHandler::executeChild(int outfd[2], int infd[2]) {
     for (int fd = 3; fd < 1024; ++fd)
         close(fd);
 
+    // chdir to the script's directory for relative path file access
+    std::string dir = _scriptPath.substr(0, _scriptPath.rfind('/'));
+    if (!dir.empty())
+        chdir(dir.c_str());
+
     char* argv[3];
     argv[0] = strdup(_cgiBinary.c_str());
     argv[1] = strdup(_scriptPath.c_str());
@@ -202,11 +229,16 @@ CgiState CgiHandler::launch() {
         return state;
 
     int outfd[2], infd[2];
-    if (pipe(outfd) < 0 || pipe(infd) < 0) {
+    if (pipe(outfd) < 0) {
         state.error = 500;
         return state;
     }
 
+    if (pipe(infd) < 0) {
+        close(outfd[0]); close(outfd[1]);
+        state.error = 500;
+        return state;
+    }
     pid_t pid = fork();
     if (pid < 0) {
         close(outfd[0]); close(outfd[1]);
