@@ -193,41 +193,10 @@
             Test invalid methods
           </p>
           <div class="links">
-            <button class="btn" onclick="sendPatch(event)" >Invalid method: PATCH</button>
-            <form class="btn" id="idFormInvalidPost" action="/" method="post">
-              <input type="hidden" name="data" id="bigData">
-              <button class="btn" style="border:none;" onclick="sendBigBody()"> 
-                Invalid post: really long text
-              </button>
-            </form>
+            <a class="btn" href="/"  >Invalid method: PATCH</a>
+            <a class="btn" href="#"  >Invalid post: really long text </a>
           </div>
         </article>
-        <script> 
-          function sendPatch(event)
-          {
-            event.preventDefault();
-            fetch("/files", {method:"PATCH", body:"test"})
-              .then(async response => {
-                if (response.status >= 400)
-                {
-                  const html=await response.text();
-                  document.open();
-                  document.write(html);
-                  document.close();
-                }
-                else
-                {
-                  alert("status" + response.status);
-                }
-              })
-              .catch(error => alert("error" + error));
-          }
-          function sendBigBody()
-          {
-            document.getElementById("bigData").value = "text".repeat(10*1024*1024);
-            document.getElementById("idFormInvalidPost").submit();
-          }
-        </script>
       </section>
 
 
