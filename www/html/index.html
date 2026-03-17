@@ -196,8 +196,8 @@
             Test invalid methods
           </p>
           <div class="links">
-            <button class="btn btn-danger" onclick="sendPatch(event)" >Invalid method: PATCH</button>
-            <form class="btn btn-danger" id="idFormInvalidPost" action="/" method="post">
+            <button class="btn" onclick="sendPatch(event)" >Invalid method: PATCH</button>
+            <form class="btn" id="idFormInvalidPost" action="/" method="post">
               <input type="hidden" name="data" id="bigData">
               <button class="btn" style="border:none;" onclick="sendBigBody()"> 
                 Invalid post: really long text
@@ -209,7 +209,7 @@
           function sendPatch(event)
           {
             event.preventDefault();
-            fetch("/", {method:"POST", body:"test"})
+            fetch("/files", {method:"PATCH", body:"test"})
               .then(async response => {
                 if (response.status >= 400)
                 {
