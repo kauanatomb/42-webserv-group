@@ -2,6 +2,11 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
 
 std::string HandlerResolver::extractHostname(const std::string& host_header) {
     size_t pos = host_header.find(':');

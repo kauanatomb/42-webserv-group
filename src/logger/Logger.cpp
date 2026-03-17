@@ -1,4 +1,5 @@
 #include "logger/Logger.hpp"
+#include <sys/wait.h>
 
 void Logger::serverInit(const std::string& ip, int port) {
     std::cout << "[SERVER] Listening on " << ip << ":" << port << std::endl;
