@@ -41,6 +41,7 @@ class Connection {
         bool isIdleSince(time_t now, int seconds) const;
         time_t getCgiStartTime() const;
         void handleCgiTimeout();
+        void killCgi();
 
     private:
         int _socket_fd;

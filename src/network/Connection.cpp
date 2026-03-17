@@ -33,16 +33,20 @@ bool Connection::isIdleSince(time_t now, int seconds) const {
 
 time_t Connection::getCgiStartTime() const { return _cgi_start_time; }
 
-void Connection::handleCgiTimeout() {
+void Connection::killCgi() {
     if (_cgi.pid > 0) {
         kill(_cgi.pid, SIGKILL);
-        waitpid(_cgi.pid, NULL, WNOHANG);
+        waitpid(_cgi.pid, NULL, 0);
+        _cgi.pid = -1;
     }
-    if (_cgi.stdin_fd != -1) { close(_cgi.stdin_fd); _cgi.stdin_fd = -1; }
+    if (_cgi.stdin_fd  != -1) { close(_cgi.stdin_fd);  _cgi.stdin_fd  = -1; }
     if (_cgi.stdout_fd != -1) { close(_cgi.stdout_fd); _cgi.stdout_fd = -1; }
-    _cgi.pid = -1;
     _cgi.done = true;
     _cgi_start_time = 0;
+}
+
+void Connection::handleCgiTimeout() {
+    killCgi();
 
     Logger::timeout(_socket_fd, "CGI timeout");
     _response = ErrorHandler::build(504, _active_loc);

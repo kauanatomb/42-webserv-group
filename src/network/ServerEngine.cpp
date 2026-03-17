@@ -55,6 +55,8 @@ void ServerEngine::setupSignalHandling() {
 void ServerEngine::cleanup() {
     for (std::map<int, Connection>::iterator it = _connections.begin();
             it != _connections.end(); ++it) {
+        if (it->second.hasCgi())
+            it->second.killCgi();
         close(it->first);
     }
     _connections.clear();
