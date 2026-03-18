@@ -30,11 +30,6 @@ static std::string trimOWS(const std::string& str)
     return str.substr(start, end - start + 1);
 }
 
-///StartLine
-static bool checkMethod(std::string method)
-{
-    return (method == "GET" ||method == "POST" || method == "DELETE");
-}
 
 static bool isHex(char c)
 {
@@ -97,8 +92,6 @@ bool RequestParser::parseStartLine(std::string& buffer, HttpRequest& request)
     std::string bufferSection = copyAndCleanBuffer(buffer); 
     std::istringstream iss(bufferSection);
     iss >> request.method >> request.uri >> request.version;
-    if (!checkMethod(request.method))
-        return (setErrorInfo(ERROR, 405, true), true); 
     if (!checkURI(request.uri))
         return (setErrorInfo(ERROR, 400, true), true);
     if (!checkVersion(request.version))
