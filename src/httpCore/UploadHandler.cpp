@@ -26,9 +26,6 @@ static std::string joinPath(const std::string& a, const std::string& b)
     return a + b;
 }
 
-static bool hasTrailingSlash(const std::string& s) {
-    return (!s.empty() && s[s.size() - 1] == '/');
-}
 
 static bool isDir(const std::string& p)
 {
@@ -174,6 +171,16 @@ bool UploadHandler::writeFileBinary(const std::string& filePath, const std::stri
     return true;
 }
 
+
+static std::string removePortion(const std::string& str, const std::string& toRemove)
+{
+    size_t pos = str.find(toRemove);
+    if (pos == std::string::npos)
+        return str;
+    std::string result = str;
+    result.erase(pos, toRemove.size());
+    return result;
+}
 HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation* loc)
 {
     // 1- 413 check
@@ -237,8 +244,7 @@ HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation
     res.reason_phrase = "Created";
     res.headers["Content-Type"] = "text/plain";
     std::string base = req.path;
-    if (!hasTrailingSlash(base)) base += "/";
-    res.headers["Location"] = base + filename;
+    res.headers["Location"] = removePortion(store, "./www/html") + "/" + filename;
     res.body = "Created\n";
     return res;
 }
