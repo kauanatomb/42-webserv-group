@@ -1,0 +1,4 @@
+http://localhost:8080/cgi-bin/get_query_string.py
+http://localhost:8080/cgi-bin/get_test.py
+http://localhost:8080/cgi-bin/get_test.sh
+http://localhost:8080/

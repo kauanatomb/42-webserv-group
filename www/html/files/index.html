@@ -1,8 +1,134 @@
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><title>files</title></head>
-<body>
-  <h1>FILES OK 📁</h1>
-  <p>/files served from location root</p>
-</body>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Files</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0d1117;
+        color: #e5e7eb;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 680px;
+        background: #111827;
+        border: 1px solid rgba(52, 211, 153, 0.25);
+        border-radius: 16px;
+        padding: 40px 28px;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        text-align: center;
+        font-size: 1.5rem;
+      }
+
+      .autoindex {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .autoindex li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(52, 211, 153, 0.1);
+      }
+
+      .autoindex li:last-child {
+        border-bottom: none;
+      }
+
+      .autoindex a {
+        text-decoration: none;
+        color: #34d399;
+        font-size: 0.95rem;
+        transition: opacity 0.2s;
+      }
+
+      .autoindex a:hover {
+        opacity: 0.75;
+      }
+
+      .delete-btn {
+        background: none;
+        border: 1px solid rgba(248, 113, 113, 0.4);
+        color: #f87171;
+        cursor: pointer;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        transition: background 0.2s;
+      }
+
+      .delete-btn:hover {
+        background: rgba(248, 113, 113, 0.15);
+      }
+
+      .empty {
+        text-align: center;
+        color: #9ca3af;
+        padding: 20px 0;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .actions a {
+        text-decoration: none;
+        color: #e5e7eb;
+        border: 1px solid rgba(52, 211, 153, 0.25);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        transition: border-color 0.2s;
+      }
+
+      .actions a:hover {
+        border-color: #34d399;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Files</h1>
+      <!-- AUTOINDEX -->
+      <div class="actions">
+        <a href="/upload">Upload a file</a>
+        <a href="/">Return to Control Panel</a>
+      </div>
+    </main>
+    <script>
+      document.querySelectorAll(".delete-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var path = this.getAttribute("data-path");
+          if (!confirm("Delete " + path + "?")) return;
+          var xhr = new XMLHttpRequest();
+          xhr.open("DELETE", path);
+          xhr.onload = function () {
+            if (xhr.status === 204) location.reload();
+            else alert("Error: " + xhr.status + " " + xhr.statusText);
+          };
+          xhr.onerror = function () {
+            alert("Request failed");
+          };
+          xhr.send();
+        });
+      });
+    </script>
+  </body>
 </html>
