@@ -183,7 +183,7 @@ HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation
 
     // 2- upload enabled?
     if (!loc->getHasUpload())
-        return ErrorHandler::build(501, loc);
+        return ErrorHandler::build(405, loc);
 
     // 3- validate upload_store
     const std::string& store = loc->getUploadStore();
