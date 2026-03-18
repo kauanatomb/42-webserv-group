@@ -206,10 +206,20 @@ void Connection::finalizeCgi() {
     waitpid(_cgi.pid, &status, WNOHANG);
 
     Logger::cgiDone(_socket_fd, status);
-    if (WIFEXITED(status) && WEXITSTATUS(status) != 0 && _cgi.output.empty())
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        if (_cgi.output.empty())
+            _response = ErrorHandler::build(502, _active_loc);
+        else
+            _response = CgiHandler::parseCgiOutput(_cgi.output); // output partial
+    } else if (!WIFEXITED(status)) {
+        // dead by signal (SIGSEGV, etc.)
         _response = ErrorHandler::build(502, _active_loc);
-    else
+    } else if (_cgi.output.empty()) {
+        // exit(0) without output
+        _response = ErrorHandler::build(502, _active_loc);
+    } else {
         _response = CgiHandler::parseCgiOutput(_cgi.output);
+    }
 
     if (_cgi.stdout_fd != -1) {
         close(_cgi.stdout_fd);
