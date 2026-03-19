@@ -172,15 +172,18 @@ bool UploadHandler::writeFileBinary(const std::string& filePath, const std::stri
 }
 
 
-static std::string removePortion(const std::string& str, const std::string& toRemove)
+static std::string deriveUriFromStore(const std::string& locationRoot, const std::string& uploadStore)
 {
-    size_t pos = str.find(toRemove);
-    if (pos == std::string::npos)
-        return str;
-    std::string result = str;
-    result.erase(pos, toRemove.size());
-    return result;
+    size_t i = 0;
+    while (i < locationRoot.size() && i < uploadStore.size() && locationRoot[i] == uploadStore[i])
+        i++;
+
+    std::string uri = uploadStore.substr(i);
+    if (uri.empty() || uri[0] != '/')
+        uri = "/" + uri;
+    return uri;
 }
+
 HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation* loc)
 {
     // 1- 413 check
@@ -244,7 +247,7 @@ HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation
     res.reason_phrase = "Created";
     res.headers["Content-Type"] = "text/plain";
     std::string base = req.path;
-    res.headers["Location"] = removePortion(store, "./www/html") + "/" + filename;
+    res.headers["Location"] = deriveUriFromStore(loc->getRoot(), store) + "/" + filename;
     res.body = "Created\n";
     return res;
 }
