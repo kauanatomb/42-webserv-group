@@ -26,9 +26,6 @@ static std::string joinPath(const std::string& a, const std::string& b)
     return a + b;
 }
 
-static bool hasTrailingSlash(const std::string& s) {
-    return (!s.empty() && s[s.size() - 1] == '/');
-}
 
 static bool isDir(const std::string& p)
 {
@@ -174,6 +171,19 @@ bool UploadHandler::writeFileBinary(const std::string& filePath, const std::stri
     return true;
 }
 
+
+static std::string deriveUriFromStore(const std::string& locationRoot, const std::string& uploadStore)
+{
+    size_t i = 0;
+    while (i < locationRoot.size() && i < uploadStore.size() && locationRoot[i] == uploadStore[i])
+        i++;
+
+    std::string uri = uploadStore.substr(i);
+    if (uri.empty() || uri[0] != '/')
+        uri = "/" + uri;
+    return uri;
+}
+
 HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation* loc)
 {
     // 1- 413 check
@@ -237,8 +247,7 @@ HttpResponse UploadHandler::handle(const HttpRequest& req, const RuntimeLocation
     res.reason_phrase = "Created";
     res.headers["Content-Type"] = "text/plain";
     std::string base = req.path;
-    if (!hasTrailingSlash(base)) base += "/";
-    res.headers["Location"] = base + filename;
+    res.headers["Location"] = deriveUriFromStore(loc->getRoot(), store) + "/" + filename;
     res.body = "Created\n";
     return res;
 }

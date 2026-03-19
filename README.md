@@ -139,8 +139,11 @@ curl -v http://localhost:8080/
 
 if program is closed incorrectly use the following commands 
 
+
+```bash
 lsof -i :8080
 kill -9 <PID>
+```
 and rerun 
 
 ## Configuration File

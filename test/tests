@@ -1,0 +1,40 @@
+POST /upload HTTP/1.1
+Host: Webserv
+Content-Type: text/plain
+Content-Length: 19
+
+hello post test 2 2 2
+
+---------
+
+POST /upload HTTP/1.1
+Host: Webserv
+Content-Type: text/plain
+Transfer-Encoding: chunked
+
+27
+Voici les données du premier morceau
+
+1C
+et voici un second morceau
+
+20
+et voici deux derniers morceaux 
+
+12
+sans saut de ligne
+
+0
+
+---------
+
+HEAD /index.html HTTP/1.1
+Host: Webserv
+Accept-Language: fr
+
+
+-----
+
+curl -X DELETE http://localhost:8080/files/upload_1773851064_661438_0.txt \
+  -H "Host: Webserv" \
+  -H "Accept-Language: fr"
