@@ -178,6 +178,9 @@ static std::string stripLocationPrefix(const std::string& uri, const std::string
 
 std::string HandlerResolver::resolvePath(const HttpRequest& req, const RuntimeLocation* loc)
 {
+    if (loc->getHasReturn())
+        return loc->getReturnValue();
+
     std::string root = loc->getRoot();
     std::string suffix = stripLocationPrefix(req.path, loc->getPath());
     std::string raw = joinPath(root, suffix);

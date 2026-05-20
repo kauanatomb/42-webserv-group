@@ -50,4 +50,5 @@ class RuntimeLocation {
         const std::string& getUploadStore() const;
         bool getHasCGI() const;
         const std::map<std::string, std::string>& getCGIExec() const;
+        std::string getReturnValue() const;
 };

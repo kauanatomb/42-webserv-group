@@ -115,3 +115,8 @@ bool RuntimeLocation::getHasCGI() const { return has_cgi; }
 const std::map<std::string, std::string>& RuntimeLocation::getCGIExec() const { 
     return cgi_exec; 
 }
+
+std::string RuntimeLocation::getReturnValue() const
+{
+    return redirect.target;
+}
